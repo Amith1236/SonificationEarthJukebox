@@ -33,6 +33,33 @@
     </div>
   </figure>
 
+  <section class="cues" aria-label="What you are hearing: each data value and the sound it drives">
+    <div class="cue">
+      <span class="k">Canopy height</span>
+      <b id="cuHeight">—</b>
+      <div class="meter"><i id="cuHeightBar"></i></div>
+      <span class="s">Main voice <em id="cuPitch">—</em><small>taller forest → higher note</small></span>
+    </div>
+    <div class="cue">
+      <span class="k">Canopy health</span>
+      <b id="cuHealth">—</b>
+      <div class="meter"><i id="cuHealthBar"></i></div>
+      <span class="s">Shimmer <em id="cuShimmer">—</em><small>healthier → brighter octave above</small></span>
+    </div>
+    <div class="cue">
+      <span class="k">Dieback stress</span>
+      <b id="cuStress">—</b>
+      <div class="meter"><i id="cuStressBar"></i></div>
+      <span class="s">Dissonance <em id="cuDiss">—</em><small>more dieback → louder, sour clash</small></span>
+    </div>
+    <div class="cue">
+      <span class="k">Ground elevation</span>
+      <b id="cuElev">—</b>
+      <div class="meter"><i id="cuElevBar"></i></div>
+      <span class="s">Low drone <em id="cuDrone">—</em><small>higher ground → higher drone</small></span>
+    </div>
+  </section>
+
   <div class="plinth">
     <div id="ej-label"></div>
     <div class="transport" role="group" aria-label="Playback">
@@ -66,15 +93,6 @@
         <dt>Expected</dt><dd id="selPred">—</dd>
         <dt>Height anomaly</dt><dd id="selDef">—</dd>
         <dt>Canopy cover</dt><dd id="selCover">—</dd>
-      </dl>
-    </div>
-    <div class="panel">
-      <h2>Voices</h2>
-      <dl>
-        <dt>Sub-bass drone</dt><dd id="v1">terrain → Hz</dd>
-        <dt>Canopy voice</dt><dd id="v2">height → pitch</dd>
-        <dt>Shimmer</dt><dd id="v3">health → brightness</dd>
-        <dt>Dissonance</dt><dd id="v4">dieback → detune</dd>
       </dl>
     </div>
     <div class="panel">

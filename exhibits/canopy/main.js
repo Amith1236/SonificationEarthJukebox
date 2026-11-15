@@ -89,12 +89,26 @@ function initAudio() {
   if (ac.state === 'suspended') ac.resume();
 }
 function sound(c) {
-  if (!voices || !S.audible) return;
-  const v = voicesFor(c); voices.play(v);
-  $('v1').textContent = `${v.sub.freq.toFixed(0)} Hz`;
-  $('v2').textContent = `${v.pad.freq.toFixed(0)} Hz`;
-  $('v3').textContent = `${((1 - v.stress) * 100).toFixed(0)}% bright`;
-  $('v4').textContent = `${(v.stress * 100).toFixed(0)}% stress`;
+  const v = voicesFor(c);
+  cues(c, v);
+  if (voices && S.audible) voices.play(v);
+}
+// the live strip under the map: each data value next to the sound it drives
+const word = (x, lo, mid, hi) => (x < 0.33 ? lo : x < 0.66 ? mid : hi);
+function cues(c, v) {
+  const hT = clamp(c.rh100_m / RULES.maxHeight, 0, 1), st = v.stress, eT = clamp((c.elev_m || 0) / 1000, 0, 1);
+  $('cuHeight').textContent = `${c.rh100_m.toFixed(1)} m`;
+  $('cuHeightBar').style.width = hT * 100 + '%';
+  $('cuPitch').textContent = `${v.pad.freq.toFixed(0)} Hz · ${word(hT, 'low', 'middle', 'high')}`;
+  $('cuHealth').textContent = `${Math.round((1 - st) * 100)}%`;
+  $('cuHealthBar').style.width = (1 - st) * 100 + '%';
+  $('cuShimmer').textContent = word(1 - st, 'faint', 'soft', 'bright');
+  $('cuStress').textContent = `${Math.round(st * 100)}%`;
+  $('cuStressBar').style.width = st * 100 + '%';
+  $('cuDiss').textContent = st > 0.5 ? 'loud · minor third' : st > 0.25 ? 'quiet · fifth' : 'almost silent';
+  $('cuElev').textContent = `${Math.round(c.elev_m || 0)} m`;
+  $('cuElevBar').style.width = eT * 100 + '%';
+  $('cuDrone').textContent = `${v.sub.freq.toFixed(0)} Hz`;
 }
 
 // ---------- selection ----------
