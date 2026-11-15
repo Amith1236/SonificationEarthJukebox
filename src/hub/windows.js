@@ -12,19 +12,23 @@ export const HANG = {
 export function createWindows(scene, chapters, visitedSet) {
   const n = chapters.length, step = (Math.PI * 2) / n;
   const loader = new THREE.TextureLoader();
-  const y = Math.tan(HANG.pitch) * HANG.R;
   const items = chapters.map((ch, i) => {
     const a = -i * step;                      // work i+1 hangs to the right of work i
     const holder = new THREE.Group();
-    holder.position.set(Math.sin(a) * HANG.R, y, Math.cos(a) * HANG.R);
+    const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(Math.cos(a), 0, -Math.sin(a)), -HANG.pitch);
+    const ce = Math.cos(HANG.pitch);
+    holder.position.set(Math.sin(a) * ce * HANG.R, Math.sin(HANG.pitch) * HANG.R, Math.cos(a) * ce * HANG.R);
     holder.lookAt(0, 0, 0);
     scene.add(holder);
 
-    const art = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x888888 }));
-    art.scale.set(HANG.H * 1.6, HANG.H, 1);
-    art.userData.idx = i; holder.add(art);
-    const frame = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color(ch.color), transparent: true, opacity: 0.6 }));
-    frame.position.z = -0.02; holder.add(frame);
+    // the work and its frame are curved: patches of a sphere centred on the visitor,
+    // so every part of the screen is the same distance from the eye
+    const art = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.BackSide }));
+    art.userData.idx = i; art.quaternion.copy(tilt); scene.add(art);
+    const frame = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: new THREE.Color(ch.color), transparent: true, opacity: 0.6, side: THREE.BackSide }));
+    frame.quaternion.copy(tilt); scene.add(frame);
+    const tc = Math.PI / 2;                 // built level, then tilted down to the eye-line
+    const arcSeg = (r, h, arc) => { const ah = h / r; return new THREE.SphereGeometry(r, Math.max(24, Math.round(arc * 60)), 24, a + Math.PI / 2 - arc / 2, arc, tc - ah / 2, ah); };
 
     // a soft picture-light wash above the work
     const wash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex('255,240,215', 0.4), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
@@ -36,14 +40,14 @@ export function createWindows(scene, chapters, visitedSet) {
 
     const layout = aspect => {
       const w = HANG.H * aspect, h = HANG.H, m = 0.16;
-      art.scale.set(w, h, 1);
-      frame.scale.set(w + m * 2, h + m * 2, 1);
+      art.geometry.dispose(); art.geometry = arcSeg(HANG.R, h, w / HANG.R);
+      frame.geometry.dispose(); frame.geometry = arcSeg(HANG.R + 0.03, h + m * 2, (w + m * 2) / (HANG.R + 0.03));
       wash.scale.set(w * 1.15, 2.6, 1); wash.position.set(0, h / 2 + 0.2, -0.05);
-      label.scale.set(4.8, 0.6, 1); label.position.set(-w / 2 + 2.4, -h / 2 - 0.75, 0);
+      label.scale.set(6, 0.75, 1); label.position.set(0, -h / 2 - 0.75, 0);
     };
     layout(1.6);
     loader.load(ch.thumb, tex => {
-      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; tex.wrapS = THREE.RepeatWrapping; tex.repeat.x = -1;
       art.material.map = tex; art.material.needsUpdate = true;
       layout(tex.image.width / tex.image.height);
     });
@@ -53,11 +57,13 @@ export function createWindows(scene, chapters, visitedSet) {
       label.material.map?.dispose();
       label.material.map = canvasTex(1024, 128, (g, w, h) => {
         g.textBaseline = 'middle'; g.textAlign = 'left';
-        g.fillStyle = ch.color; g.font = '500 34px "IBM Plex Mono", monospace';
-        const num = String(i + 1).padStart(2, '0'); g.fillText(num, 0, h / 2 + 2);
-        g.fillStyle = '#ece9e2'; g.font = '700 58px "Manrope", sans-serif';
-        g.fillText(ch.title, 70, h / 2);
-        if (seen) { const tw = g.measureText(ch.title).width; g.fillStyle = 'rgba(236,233,226,.5)'; g.font = '500 30px "Manrope", sans-serif'; g.fillText('heard', 70 + tw + 22, h / 2 + 6); }
+        const num = String(i + 1).padStart(2, '0');
+        g.font = '700 58px "Manrope", sans-serif'; const tw = g.measureText(ch.title).width;
+        g.font = '500 30px "Manrope", sans-serif'; const sw = seen ? g.measureText('heard').width + 22 : 0;
+        let x = (w - (70 + tw + sw)) / 2;
+        g.fillStyle = ch.color; g.font = '500 34px "IBM Plex Mono", monospace'; g.fillText(num, x, h / 2 + 2); x += 70;
+        g.fillStyle = '#ece9e2'; g.font = '700 58px "Manrope", sans-serif'; g.fillText(ch.title, x, h / 2); x += tw + 22;
+        if (seen) { g.fillStyle = 'rgba(236,233,226,.5)'; g.font = '500 30px "Manrope", sans-serif'; g.fillText('heard', x, h / 2 + 6); }
       });
       label.material.needsUpdate = true;
     };
