@@ -11,7 +11,7 @@
 // =============================================================================
 
 export const SITE = {
-  name: 'Earth Information Jukebox',
+  name: 'AirLab',
   tagline: 'Listening to the air from low Earth orbit',
   event: 'NASA Space Apps Challenge 2026',
 };
@@ -71,7 +71,7 @@ export const CHAPTERS = [
 // Words spoken and shown in the hub
 export const HUB = {
   splash: {
-    title: 'Earth Information <em>Jukebox</em>',
+    title: 'Air<em>Lab</em>',
     body: 'Four works of sound made from NASA observations of the air, hung in low Earth orbit.',
     begin: 'Enter the gallery',
     list: 'Text-only index',

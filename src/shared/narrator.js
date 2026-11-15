@@ -15,6 +15,7 @@ const PRONOUNCE = [
   // clock times: "06:00 UTC" → "6 a.m. universal time", "00:00" → "midnight"
   [/\b(\d{1,2}):00\s*UTC\b/g, (_, h) => `${hourWords(+h % 24)} universal time`], [/\bUTC\b/g, 'universal time'],
   [/\b(\d{1,2}):00\b/g, (_, h) => hourWords(+h % 24)],
+  [/\bAirLab\b/g, 'Air Lab'],
   [/CO₂/g, 'C O 2'], [/NO₂/g, 'N O 2'], [/\bppm\b/g, 'parts per million'],
   [/\bGEDI\b/g, 'Jedi'], [/\bGEOS-CF\b/g, 'geos C F'], [/\bGEOS\b/g, 'geos'],
   [/\bRH100\b/g, 'R H 100'], [/\bISS\b/g, 'I S S'], [/\bSVS\b/g, 'S V S'],

@@ -1,4 +1,4 @@
-# Earth Information Jukebox
+# AirLab
 
 An accessible, interactive story of Earth's air told through sound, built from NASA data for the NASA Space Apps Challenge 2026. The visitor floats in low Earth orbit, in a gallery of four works; each is a sonification hung in its own room:
 

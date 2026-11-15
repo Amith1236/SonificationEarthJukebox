@@ -1,8 +1,8 @@
 {
-  "name": "earth-jukebox",
+  "name": "airlab",
   "private": true,
   "version": "0.1.0",
-  "description": "Earth Information Jukebox: an interactive, accessible sonification of Earth's air quality from NASA data (NASA Space Apps 2026).",
+  "description": "AirLab: an interactive, accessible sonification of Earth's air quality from NASA data (NASA Space Apps 2026).",
   "type": "module",
   "scripts": {
     "dev": "vite",
