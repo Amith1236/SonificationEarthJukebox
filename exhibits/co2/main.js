@@ -283,9 +283,11 @@ function describe(intro) {
 // =====================================================================
 let simHour = 0, playing = false, speedHps = content.defaultSpeed;
 const MONTHS = ['January', 'February', 'March'];
+const hourWords = h => (h === 0 ? 'midnight' : h === 12 ? 'noon' : `${h % 12} ${h < 12 ? 'a.m.' : 'p.m.'}`);
 function dateStr(h, short) {
   const d = new Date(START + h * 3600e3), hh = String(d.getUTCHours()).padStart(2, '0');
-  return short ? `${d.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr'][d.getUTCMonth()]} 2020, ${hh}:00 UTC` : `${d.getUTCDate()} ${MONTHS[Math.min(2, d.getUTCMonth())]} 2020, ${hh}:00 UTC`;
+  // short: for the screen ("1 Jan 2020, 06:00 UTC"); long: for speech and screen readers ("1 January 2020, 6 a.m. universal time")
+  return short ? `${d.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr'][d.getUTCMonth()]} 2020, ${hh}:00 UTC` : `${d.getUTCDate()} ${MONTHS[Math.min(2, d.getUTCMonth())]} 2020, ${hourWords(d.getUTCHours())} universal time`;
 }
 function updateTimeUI() {
   const d = new Date(START + simHour * 3600e3), hh = String(d.getUTCHours()).padStart(2, '0');
