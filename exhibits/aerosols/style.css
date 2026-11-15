@@ -25,7 +25,7 @@ canvas:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 .tabs button[aria-checked="true"] { background: #221b33; color: var(--ink); box-shadow: inset 0 0 0 1px #4a3d66; }
 .help { margin: 0; font-size: 14px; line-height: 1.5; color: #c8d0da; }
 .row { display: flex; gap: 8px; }
-.btn { flex: 1; font-size: 14px; font-weight: 500; padding: 10px; border-radius: 9px; }
+.panel .btn { flex: 1; font-size: 14px; font-weight: 500; padding: 10px; border-radius: 9px; }
 .mixer { display: flex; flex-direction: column; gap: 8px; }
 .mx { display: grid; grid-template-columns: 14px 1fr 34px 34px; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); }
 .mx .dot { width: 12px; height: 12px; border-radius: 50%; }

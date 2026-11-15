@@ -123,7 +123,7 @@ function drawParticles(dt) {
     const b = toScreen(p.lon, p.lat);
     if (Math.abs(b[0] - a[0]) > W / 3 || b[0] < -5 || b[0] > W + 5 || b[1] < -5 || b[1] > H + 5) { spawn(p); continue; }
     const col = colorOf(sim.sample(cur, p.lon, p.lat)), fade = Math.min(1, p.age / 10, (p.max - p.age) / 15);
-    tctx.strokeStyle = col ? `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${(Math.min(1, col[3] + 0.3) * fade * (VIS.glow ? 0.75 : 1)).toFixed(2)})`
+    tctx.strokeStyle = col ? `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${(Math.min(1, col[3] + 0.3) * fade * (VIS.glow ? 0.55 : 1)).toFixed(2)})`
       : (settings.hc ? 'rgba(255,255,255,' : 'rgba(170,195,240,') + (0.2 * fade).toFixed(2) + ')';
     tctx.beginPath(); tctx.moveTo(a[0], a[1]); tctx.lineTo(b[0], b[1]); tctx.stroke();
   }

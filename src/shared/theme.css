@@ -74,14 +74,15 @@ kbd { font-family: var(--mono); font-size: .78em; padding: 1px 5px; border: 1px 
    Exhibit shell (top bar on every exhibit page, see src/shared/shell.js)
    ========================================================================== */
 .ej-shell { position: sticky; top: 0; z-index: 50; background: rgba(4, 6, 14, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-.ej-shell .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px clamp(12px, 2.4vw, 24px); }
-.ej-shell .chap { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
-.ej-shell .chap small { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.ej-shell .chap b { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ej-shell .tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.ej-shell .tools button, .ej-shell .tools .btn, .ej-shell .tools select { font-size: .85rem; padding: .35em .8em; }
-.ej-shell .home { font-weight: 600; }
-@media (max-width: 760px) { .ej-shell .tools .opt { display: none; } }
+.ej-shell .ej-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px clamp(12px, 2.4vw, 24px); }
+.ej-shell .ej-chap { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.ej-shell .ej-chap small { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.ej-shell .ej-chap b { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ej-tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ej-shell .ej-tools button, .ej-shell .ej-tools .btn, .ej-shell .ej-tools select { font-size: .85rem; padding: .35em .8em; flex: none; }
+.ej-shell .ej-tools select { max-width: 190px; }
+.ej-shell .ej-home { font-weight: 600; flex: none; }
+@media (max-width: 760px) { .ej-shell .ej-opt { display: none; } }
 
 dialog.ej-dialog { max-width: min(760px, calc(100% - 32px)); max-height: min(80vh, 900px); width: 100%; padding: 0; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--panel-solid); color: var(--ink); }
 dialog.ej-dialog::backdrop { background: rgba(0, 0, 0, .7); }

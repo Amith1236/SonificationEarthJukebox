@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { canvasTex, glowTex } from './sky.js';
 
-const R_SCR = 10.5, H_SCR = 4.1, Y_SCR = 1.35;
+const R_SCR = 10.5, H_SCR = 3.8, Y_SCR = -0.35;
 const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(','); };
 
 export function createWindows(scene, chapters, visitedSet) {
@@ -31,7 +31,7 @@ export function createWindows(scene, chapters, visitedSet) {
     beam.position.set(Math.sin(a) * R_SCR * 0.99, Y_SCR - H_SCR / 2 - 4.5, Math.cos(a) * R_SCR * 0.99); beam.lookAt(0, beam.position.y, 0); scene.add(beam);
 
     const label = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 1.65), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
-    label.position.set(Math.sin(a) * (R_SCR - 0.3), Y_SCR + H_SCR / 2 + 1.15, Math.cos(a) * (R_SCR - 0.3));
+    label.position.set(Math.sin(a) * (R_SCR - 0.3), Y_SCR + H_SCR / 2 + 1.0, Math.cos(a) * (R_SCR - 0.3));
     label.lookAt(0, label.position.y - 0.6, 0); label.userData.idx = i; scene.add(label);
     const item = { ch, i, angle: a, yaw: a + Math.PI, scr, mat, frame, halo, beam, label, glow: 0 };
     item.drawLabel = seen => {

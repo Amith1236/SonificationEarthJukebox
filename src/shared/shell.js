@@ -58,7 +58,7 @@ export function mountShell({ id, transcript = [], mount = '#ej-shell', onPrefs }
   narrBtn.addEventListener('click', () => { narrator.setEnabled(!narrator.enabled); syncNarr(); narrator.say(narrator.enabled ? 'Narration on.' : 'Narration off.'); });
   if (!narrator.available) narrBtn.hidden = true;
 
-  const voiceSel = el('select', { class: 'opt', 'aria-label': 'Narrator voice' });
+  const voiceSel = el('select', { class: 'ej-opt', 'aria-label': 'Narrator voice' });
   narrator.onVoices((vs, cur) => {
     voiceSel.textContent = '';
     vs.forEach(v => { const o = el('option', { value: v.name }, `${v.name.replace(/Microsoft |Google /, '')} (${v.lang})`); if (v === cur) o.selected = true; voiceSel.append(o); });
@@ -67,19 +67,19 @@ export function mountShell({ id, transcript = [], mount = '#ej-shell', onPrefs }
   voiceSel.addEventListener('change', () => { narrator.setVoice(voiceSel.value); narrator.setEnabled(true); syncNarr(); narrator.say('This is how I sound.'); });
 
   const pressBtn = (label, key, on, off) => {
-    const b = el('button', { class: 'opt', 'aria-pressed': String(prefs.get(key) === on) }, label);
+    const b = el('button', { class: 'ej-opt', 'aria-pressed': String(prefs.get(key) === on) }, label);
     b.addEventListener('click', () => { const v = prefs.toggle(key, on, off); b.setAttribute('aria-pressed', String(v === on)); narrator.say(`${label} ${v === on ? 'on' : 'off'}.`, { speak: false }); onPrefs && onPrefs(prefs.all()); });
     return b;
   };
   const sizes = ['normal', 'large', 'xlarge'];
-  const textBtn = el('button', { class: 'opt', 'aria-label': 'Text size' }, 'A A');
+  const textBtn = el('button', { class: 'ej-opt', 'aria-label': 'Text size' }, 'A A');
   textBtn.addEventListener('click', () => { const v = sizes[(sizes.indexOf(prefs.get('text')) + 1) % 3]; prefs.set('text', v); narrator.say(`Text size ${v === 'xlarge' ? 'extra large' : v}.`, { speak: false }); onPrefs && onPrefs(prefs.all()); });
 
   host.textContent = '';
-  host.append(el('div', { class: 'bar' },
-    el('a', { class: 'btn home', href: `/?from=${id}`, 'aria-label': 'Back to orbit (the hub)', 'aria-keyshortcuts': 'Escape' }, '← Orbit'),
-    el('div', { class: 'chap' }, el('small', {}, `Chapter ${String(i + 1).padStart(2, '0')} of ${String(n).padStart(2, '0')} · ${ch.subtitle}`), el('b', {}, ch.title)),
-    el('div', { class: 'tools', role: 'group', 'aria-label': 'Page settings' },
+  host.append(el('div', { class: 'ej-bar' },
+    el('a', { class: 'btn ej-home', href: `/?from=${id}`, 'aria-label': 'Back to orbit (the hub)', 'aria-keyshortcuts': 'Escape' }, '← Orbit'),
+    el('div', { class: 'ej-chap' }, el('small', {}, `Chapter ${String(i + 1).padStart(2, '0')} of ${String(n).padStart(2, '0')} · ${ch.subtitle}`), el('b', {}, ch.title)),
+    el('div', { class: 'ej-tools', role: 'group', 'aria-label': 'Page settings' },
       el('button', { onclick: () => { renderTranscript(); dlg.showModal(); }, 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'T' }, '📄 Transcript'),
       narrBtn, voiceSel,
       pressBtn('High contrast', 'contrast', 'high', 'normal'),
@@ -101,7 +101,7 @@ export function mountShell({ id, transcript = [], mount = '#ej-shell', onPrefs }
     slot.append(next
       ? el('p', {}, `Next in the journey: `, el('b', {}, next.title), ` · ${next.subtitle}`)
       : el('p', {}, 'This is the last chapter. Return to orbit to finish the journey.'),
-    el('div', { class: 'tools' },
+    el('div', { class: 'ej-tools' },
       el('a', { class: 'btn', href: `/?from=${id}` }, '← Back to orbit'),
       next ? el('a', { class: 'btn primary', href: next.path }, `Next: ${next.title} →`) : null));
   }

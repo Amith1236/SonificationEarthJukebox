@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 export const EARTH = {
   R: 100,
-  ALT: 7.5,
+  ALT: 4.6,
   ATMOS: 2.8,                       // thickness of the glowing limb
   orbitSpeed: 0.0009,               // rad/s the ground drifts beneath us (≈ ISS ground speed, visually)
   tilt: 0.9,                        // orbit inclination look (radians) – which way "forward" runs over the map
@@ -15,7 +15,7 @@ export const EARTH = {
 const TEX = {
   day: '/textures/earth_atmos_2048.jpg',
   night: '/textures/earth_lights_2048.png',
-  clouds: '/textures/earth_clouds_1024.png',
+  cloud: '/textures/earth_clouds_1024.png',
   spec: '/textures/earth_specular_2048.jpg',
 };
 

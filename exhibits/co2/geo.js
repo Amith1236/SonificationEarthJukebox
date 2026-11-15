@@ -2,15 +2,7 @@
 // CARBON CURRENTS · geography: cities (searchable, labelled on the map),
 // named regions (dashed boxes) and country outlines (loaded from public/data).
 // =============================================================================
-import { feature } from 'topojson-client';
-import { geoBounds, geoCentroid } from 'd3-geo';
-
-export async function loadCountries(url = '/data/co2/world-countries.topo.json') {
-  const world = await (await fetch(url)).json();
-  const countries = feature(world, world.objects.countries).features.filter(f => f.properties && f.properties.name);
-  countries.forEach(f => { f.bbox2 = geoBounds(f); f.centroid = geoCentroid(f); });
-  return countries;
-}
+export { loadCountries } from '../../src/shared/world.js';
 
 // [name, country, lon, lat] — order = importance (labels appear by rank as you zoom in)
 export const CITIES = [

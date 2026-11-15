@@ -14,7 +14,7 @@ import { createAmbience } from './ambience.js';
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const N = CHAPTERS.length;
-const PITCH = { rest: -0.06, min: -1.25, max: 1.1, enter: -0.02 };
+const PITCH = { rest: -0.13, min: -1.25, max: 1.1, enter: -0.06 };
 const FOV = { rest: 62, enter: 26, min: 35, max: 85 };
 
 // ---------- static text from story.js ----------
@@ -27,6 +27,7 @@ $('enterList').textContent = HUB.splash.list;
 $('spSmall').innerHTML = HUB.splash.small;
 $('help').innerHTML = HUB.help;
 $('credits').textContent = HUB.credits;
+$('listCredits').textContent = HUB.credits;
 
 // ---------- scene ----------
 const canvas = $('sky');
