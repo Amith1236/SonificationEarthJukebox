@@ -15,7 +15,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 $('kicker').textContent = content.kicker; $('title').textContent = content.title; $('lede').textContent = content.lede;
 $('about').innerHTML = content.about; $('foot').textContent = content.footer; $('keysHelp').innerHTML = content.keys;
 $('startTitle').textContent = content.startTitle; $('startText').textContent = content.startText; $('startBtn').textContent = content.startButton;
-$('moodCards').innerHTML = MOODS.map(m => `<div class="m" style="border-color:${m.color}55;background:${m.color}10"><h3 style="color:${m.color}"><span>${m.emoji} ${m.label}</span><span class="mono">${m.rangeText}</span></h3>${m.description}</div>`).join('');
+$('moodCards').innerHTML = MOODS.map(m => `<div class="m" style="border-color:${m.color}55;background:${m.color}10"><h3 style="color:${m.color}"><span>${m.label}</span><span class="mono">${m.rangeText}</span></h3>${m.description}</div>`).join('');
 
 // ---------- frames ----------
 const meta = await (await fetch('/data/no2/frames.json')).json();
@@ -120,7 +120,7 @@ function telemetry() {
   $('rgbReadout').textContent = `RGB(${S.r}, ${S.g}, ${S.b})`; $('coordReadout').textContent = ll; $('ttCoords').textContent = ll;
   $('no2ValueReadout').textContent = `${S.no2.toFixed(1)} × 10¹⁵ molec·cm⁻²`; $('ttDensity').textContent = `NO₂: ${S.no2.toFixed(1)} × 10¹⁵ molec/cm²`;
   $('no2Marker').style.left = `${clamp(S.no2 / NO2_MAX * 100, 2, 97)}%`;
-  const badge = $('moodBadge'); badge.textContent = `${m.emoji} ${m.label}`; badge.style.color = m.color; badge.style.borderColor = m.color + '88'; badge.style.background = m.color + '22';
+  const badge = $('moodBadge'); badge.textContent = m.label; badge.style.color = m.color; badge.style.borderColor = m.color + '88'; badge.style.background = m.color + '22';
   $('ttDot').style.background = m.color; $('ttMood').textContent = m.label; $('reticle').style.borderColor = m.color;
   $('scaleReadout').textContent = m.scaleName; $('tempoReadout').textContent = `${S.bpm} BPM · ${m.tempoWord}`;
   $('noteReadout').textContent = S.freq ? `${S.note} (${Math.round(S.freq)} Hz) · ${m.chord}` : m.chord;
@@ -178,7 +178,7 @@ function fromEvent(e) {
 function setPinned(on, label) {
   S.pinned = on;
   const b = $('pinBtn'); b.setAttribute('aria-pressed', String(on));
-  b.textContent = on ? `🔒 Locked${label ? ': ' + label : ''} (click to unlock)` : '🔓 Probe follows the pointer';
+  b.textContent = on ? `Probe locked${label ? ': ' + label : ''}` : 'Probe follows pointer';
   $('reticle').hidden = $('tooltip').hidden = !active(); syncDrone();
 }
 cv.addEventListener('pointerenter', e => { S.hovering = true; if (!S.pinned) placeProbe(...fromEvent(e)); else syncDrone(); });
@@ -196,7 +196,7 @@ cv.addEventListener('keydown', e => {
 cv.addEventListener('focus', () => { if (!S.pinned && cv.matches(':focus-visible')) { setPinned(true); placeProbe(S.x, S.y); } });   // keyboard focus only
 
 // ---------- controls ----------
-function setPlaying(on) { S.playing = on; $('playPauseBtn').textContent = on ? '❚❚ Pause frames' : '▶ Play frames'; $('playPauseBtn').setAttribute('aria-pressed', String(on)); }
+function setPlaying(on) { S.playing = on; $('playPauseBtn').textContent = on ? 'Pause' : 'Play'; $('playPauseBtn').setAttribute('aria-pressed', String(on)); }
 function stepFrame(d) { setPlaying(false); S.frame = (S.frame + d + NF) % NF; render(); updateProbe(); shell.say(FRAMES[S.frame].label, { speak: false }); }
 $('startBtn').addEventListener('click', () => { startAudio(); setPinned(true); placeProbe(S.x, S.y); });
 $('pinBtn').addEventListener('click', () => { setPinned(!S.pinned); placeProbe(S.x, S.y); });
@@ -209,7 +209,7 @@ $('radiusSlider').addEventListener('input', e => { S.radius = +e.target.value; $
 $('volumeSlider').addEventListener('input', e => { S.volume = e.target.value / 100; $('volumeVal').textContent = `${e.target.value}%`; audio?.setVolume(S.volume); });
 const presetBox = document.querySelector('.presets');
 content.presets.forEach(p => {
-  const b = document.createElement('button'); b.textContent = `${p.emoji} ${p.name}`; b.title = p.hint;
+  const b = document.createElement('button'); b.textContent = p.name; b.title = p.hint;
   b.addEventListener('click', () => { if (!S.audioOn) startAudio(); setPinned(true, p.name); placeProbe(p.x, p.y); shell.say(content.moodLine(S.mood, p.name, S.no2)); });
   presetBox.append(b);
 });

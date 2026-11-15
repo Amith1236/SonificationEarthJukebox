@@ -1,6 +1,6 @@
 # Earth Information Jukebox
 
-An accessible, interactive story of Earth's air told through sound, built from NASA data for the NASA Space Apps Challenge 2026. The visitor floats in low Earth orbit; around them hang four chapters, each a sonification:
+An accessible, interactive story of Earth's air told through sound, built from NASA data for the NASA Space Apps Challenge 2026. The visitor floats in low Earth orbit, in a gallery of four works; each is a sonification hung in its own room:
 
 | # | Chapter | Data | Feel |
 |---|---------|------|------|
@@ -29,8 +29,8 @@ index.html                  the hub (orbit)
 src/content/story.js        ★ chapter order, titles, colours, hub narration
 src/hub/                    hub scene: earth.js, sky.js, windows.js, ambience.js, main.js
 src/shared/                 used by every page
-  theme.css                 design tokens, buttons, shell styles
-  shell.js                  exhibit top bar: ← Orbit, transcript, narration, contrast, motion, text size, next chapter
+  theme.css                 design tokens, buttons, the room layout (.room/.piece/.plinth/.drawer)
+  shell.js                  exhibit frame: top bar, wall label, Controls drawer, transcript, settings popover
   narrator.js               one narrator voice for the whole site (+ screen-reader live region)
   prefs.js                  visitor settings saved across pages
   markov.js                 AI melody model (guided Markov decoding), reusable by any exhibit
@@ -64,4 +64,5 @@ public/textures/            Earth and Moon textures for the hub
 
 - CO₂ is a **simulation** modelled on NASA SVS #5196 (DYAMOND); replace `exhibits/co2/sim.js` with real gridded data.
 - GEDI data is a **sample** file; replace `public/data/canopy/gedi_canopy_data.json` with the output of `process_gedi_rh100.py`.
-- Earth textures: NASA Blue Marble / Black Marble via the three.js examples.
+- Earth textures: NASA Blue Marble / Black Marble (4K) via the three.js examples.
+- Hub thumbnails in `public/thumbs/` are screenshots of each piece; recapture them when a piece changes.

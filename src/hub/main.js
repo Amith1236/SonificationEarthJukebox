@@ -1,32 +1,31 @@
 // =============================================================================
-// Hub: the visitor floats in low Earth orbit. Chapter windows hang around them,
-// the planet turns below. All words come from src/content/story.js.
+// Hub: a gallery floating in low Earth orbit. The works hang in a ring around
+// the visitor, the planet turns below. All words come from src/content/story.js.
 // =============================================================================
 import * as THREE from 'three';
 import { CHAPTERS, HUB, SITE, chapterIndex } from '../content/story.js';
 import { narrator } from '../shared/narrator.js';
 import { prefs, visited } from '../shared/prefs.js';
+import { popover, settingsRows, el } from '../shared/shell.js';
 import { createEarth } from './earth.js';
 import { createSky } from './sky.js';
-import { createWindows } from './windows.js';
+import { createWindows, HANG } from './windows.js';
 import { createAmbience } from './ambience.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const N = CHAPTERS.length;
-const PITCH = { rest: -0.13, min: -1.25, max: 1.1, enter: -0.06 };
-const FOV = { rest: 62, enter: 26, min: 35, max: 85 };
+const PITCH = { rest: HANG.pitch, min: -1.3, max: 1.0, enter: HANG.pitch };
+const FOV = { rest: 62, enter: 21, min: 35, max: 85 };
 
 // ---------- static text from story.js ----------
 $('brandName').textContent = SITE.name;
-$('spEyebrow').textContent = HUB.splash.eyebrow;
 $('splashTitle').innerHTML = HUB.splash.title;
 $('spBody').innerHTML = HUB.splash.body;
 $('enterDome').textContent = HUB.splash.begin;
 $('enterList').textContent = HUB.splash.list;
 $('spSmall').innerHTML = HUB.splash.small;
 $('help').innerHTML = HUB.help;
-$('credits').textContent = HUB.credits;
 $('listCredits').textContent = HUB.credits;
 
 // ---------- scene ----------
@@ -35,7 +34,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x010208);
+scene.background = new THREE.Color(0x010205);
 const camera = new THREE.PerspectiveCamera(FOV.rest, 1, 0.1, 3000);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
@@ -62,14 +61,13 @@ const nearestIdx = () => windows.items.reduce((b, it) => (Math.abs(shortest(view
 function renderCard(i) {
   const ch = CHAPTERS[i];
   document.documentElement.style.setProperty('--accent', ch.color);
-  $('cKick').textContent = `Chapter ${String(i + 1).padStart(2, '0')} of ${String(N).padStart(2, '0')} · ${ch.dataset}`;
+  $('cKick').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
   $('cTitle').textContent = ch.title;
-  if (seen.has(ch.id)) { const s = document.createElement('span'); s.className = 'seen'; s.textContent = '✓ heard'; $('cTitle').append(s); }
+  if (seen.has(ch.id)) $('cTitle').append(el('span', { class: 'seen' }, 'heard'));
   $('cSub').textContent = ch.subtitle;
-  $('cSound').textContent = '♪ ' + ch.sound;
-  $('cNote').hidden = !ch.note; $('cNote').textContent = ch.note || '';
   $('card').setAttribute('aria-description', ch.summary);
-  $('enterBtn').textContent = `Enter ${ch.title} ▸`;
+  $('enterBtn').textContent = 'Enter';
+  $('enterBtn').setAttribute('aria-label', `Enter ${ch.title}`);
 }
 function setFocus(i, announce) {
   i = ((i % N) + N) % N;
@@ -91,6 +89,10 @@ function enter(i) {
 }
 // coming back from a chapter with the browser's back button
 addEventListener('pageshow', e => { if (e.persisted) { leaving = false; $('veil').classList.remove('on'); animateTo({ fov: FOV.rest, pitch: PITCH.rest }, 900); amb.setMuted(false); } });
+
+// the hint at the bottom fades once the visitor has found their way around
+let hinted = false;
+const dropHint = () => { if (hinted) return; hinted = true; setTimeout(() => $('help').classList.add('gone'), 2500); };
 
 // ---------- pointer ----------
 let drag = null, hoverIdx = -1;
@@ -114,7 +116,7 @@ canvas.addEventListener('pointermove', e => {
   hoverIdx = pickAt(e);
   canvas.classList.toggle('hot', hoverIdx >= 0);
   const tip = $('tip');
-  if (hoverIdx >= 0) { tip.hidden = false; tip.textContent = `${CHAPTERS[hoverIdx].title} · click to ${hoverIdx === focusIdx ? 'enter' : 'turn to it'}`; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; }
+  if (hoverIdx >= 0 && hoverIdx !== focusIdx) { tip.hidden = false; tip.textContent = CHAPTERS[hoverIdx].title; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; }
   else tip.hidden = true;
 });
 canvas.addEventListener('pointerup', e => {
@@ -122,49 +124,41 @@ canvas.addEventListener('pointerup', e => {
   if (drag && !drag.moved) {
     const i = pickAt(e);
     if (i >= 0) { const facing = Math.abs(shortest(view.yaw, windows.items[i].yaw) - view.yaw) < 0.25; if (i === focusIdx && facing) enter(i); else turnTo(i); }
-  } else if (drag && drag.moved) setFocus(nearestIdx(), true);
+  } else if (drag && drag.moved) { setFocus(nearestIdx(), true); dropHint(); }
   drag = null;
 });
 canvas.addEventListener('wheel', e => { e.preventDefault(); view.fov = clamp(view.fov + e.deltaY * 0.03, FOV.min, FOV.max); }, { passive: false });
 
-// ---------- list view ----------
+// ---------- index (text-only list) ----------
 function buildList() {
   const box = $('listItems'); box.textContent = '';
   CHAPTERS.forEach((ch, i) => {
-    const li = document.createElement('li');
-    const h = document.createElement('h3'), dot = document.createElement('i'); dot.style.background = ch.color;
-    h.append(dot, `${i + 1}. ${ch.title}${seen.has(ch.id) ? ' (heard)' : ''}`);
-    const p = document.createElement('p'); p.textContent = `${ch.subtitle}. ${ch.dataset}. ${ch.summary} ${ch.sound}${ch.note ? ' ' + ch.note : ''}`;
-    const row = document.createElement('div'); row.className = 'row';
-    const a = document.createElement('a'); a.className = 'btn primary'; a.href = ch.path; a.textContent = `Open ${ch.title}`;
-    const b = document.createElement('button'); b.textContent = 'Turn to it'; b.addEventListener('click', () => turnTo(i));
-    row.append(a, b); li.append(h, p, row); box.append(li);
+    const a = el('a', { class: 'btn primary', href: ch.path, 'aria-label': `Enter ${ch.title}` }, 'Enter');
+    box.append(el('li', {},
+      el('h3', {}, el('span', { class: 'mono' }, String(i + 1).padStart(2, '0')), ch.title, seen.has(ch.id) ? el('span', { class: 'mono' }, 'heard') : null),
+      el('p', {}, `${ch.subtitle}. ${ch.summary}`),
+      el('div', { class: 'row' }, a, el('button', { onclick: () => { turnTo(i); toggleList(false); } }, 'Turn to it'))));
   });
 }
 function toggleList(force) {
-  const el = $('list'), open = force ?? el.hidden;
-  el.hidden = !open; $('listBtn').setAttribute('aria-expanded', String(open));
-  if (open) el.querySelector('a, button')?.focus();
+  const box = $('list'), open = force ?? box.hidden;
+  box.hidden = !open; $('listBtn').setAttribute('aria-expanded', String(open));
+  if (open) { settings.close(); box.querySelector('a, button')?.focus(); }
 }
 
 // ---------- settings ----------
-function syncTts() { const b = $('ttsBtn'); b.setAttribute('aria-pressed', String(narrator.enabled)); b.textContent = narrator.enabled ? '🗣 Narration' : '🔇 Narration'; }
-function setTts(on, silent) { narrator.setEnabled(on); syncTts(); if (!silent) narrator.say(on ? 'Narration on. I will describe where you are as you move around.' : 'Narration off.', { speak: on }); }
-narrator.onVoices((vs, cur) => {
-  const sel = $('voiceSel'); sel.textContent = '';
-  vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.name.replace(/Microsoft |Google /, '')} (${v.lang})`; o.selected = v === cur; sel.append(o); });
-  sel.hidden = !vs.length;
-});
-$('voiceSel').addEventListener('change', e => { narrator.setVoice(e.target.value); setTts(true, true); narrator.say('This is how I sound. || Shall we continue… | above the clouds?'); });
-if (!narrator.available) { $('ttsBtn').hidden = true; $('voiceSel').hidden = true; }
-$('ttsBtn').addEventListener('click', () => setTts(!narrator.enabled));
-function syncAmb() { const b = $('ambBtn'); b.setAttribute('aria-pressed', String(prefs.get('ambience'))); b.textContent = prefs.get('ambience') ? '🔊 Ambience' : '🔇 Ambience'; }
-$('ambBtn').addEventListener('click', () => { prefs.set('ambience', !prefs.get('ambience')); amb.setOn(prefs.get('ambience')); syncAmb(); });
-function syncRm() { $('rmBtn').setAttribute('aria-pressed', String(reduce())); }
-$('rmBtn').addEventListener('click', () => { prefs.toggle('motion', 'reduce', 'full'); syncRm(); narrator.say(`Reduce motion ${reduce() ? 'on' : 'off'}.`); });
+const ambBtn = el('button', { 'aria-pressed': String(prefs.get('ambience')) }, 'Ambient sound');
+ambBtn.addEventListener('click', () => { prefs.set('ambience', !prefs.get('ambience')); amb.setOn(prefs.get('ambience')); ambBtn.setAttribute('aria-pressed', String(prefs.get('ambience'))); });
+let rows;
+const settings = popover('Settings', p => { rows = settingsRows(p, { extra: [ambBtn] }); });
+settings.button.classList.add('ghost');
+settings.button.addEventListener('click', () => toggleList(false));
+$('tools').append(settings.button);
+document.querySelector('.top').append(settings.panel);
+function setTts(on, silent) { narrator.setEnabled(on); rows.syncNarr(); if (!silent) narrator.say(on ? 'Narration on. I will describe where you are as you move around.' : 'Narration off.', { speak: on }); }
 $('listBtn').addEventListener('click', () => toggleList());
-$('prevBtn').addEventListener('click', () => turnTo(focusIdx - 1));
-$('nextBtn').addEventListener('click', () => turnTo(focusIdx + 1));
+$('prevBtn').addEventListener('click', () => { turnTo(focusIdx - 1); dropHint(); });
+$('nextBtn').addEventListener('click', () => { turnTo(focusIdx + 1); dropHint(); });
 $('enterBtn').addEventListener('click', () => enter(focusIdx));
 
 // first gesture anywhere starts the ambience (browsers block audio before that)
@@ -172,11 +166,11 @@ const startAudio = () => { if (prefs.get('ambience')) amb.setOn(true); removeEve
 addEventListener('pointerdown', startAudio, true); addEventListener('keydown', startAudio, true);
 
 // ---------- start / return ----------
-function hideSplash() { const sp = $('splash'); sp.classList.add('fade'); setTimeout(() => { sp.hidden = true; }, 450); }
+function hideSplash() { const sp = $('splash'); sp.classList.add('fade'); document.body.classList.remove('intro'); setTimeout(() => { sp.hidden = true; }, 600); }
 function begin(listMode) {
   hideSplash(); setFocus(0, false);
   if (listMode) { setTts(false, true); toggleList(true); narrator.say(HUB.listMode, { speak: false }); return; }
-  if (!reduce()) { view.pitch = -0.95; view.yaw = windows.items[0].yaw + 0.7; animateTo({ yaw: windows.items[0].yaw, pitch: PITCH.rest }, 5200); }
+  if (!reduce()) { view.pitch = -1.05; view.yaw = windows.items[0].yaw + 0.6; animateTo({ yaw: windows.items[0].yaw, pitch: PITCH.rest }, 5200); }
   narrator.say(HUB.intro);
   narrator.say(HUB.facing(CHAPTERS[0], 0, N), { queue: true, live: false });
   $('enterBtn').focus();
@@ -188,7 +182,7 @@ const from = new URLSearchParams(location.search).get('from');
 const fromIdx = from ? chapterIndex(from) : -1;
 if (fromIdx >= 0) {
   // returning from a chapter: skip the splash and face the next one
-  $('splash').hidden = true;
+  $('splash').hidden = true; document.body.classList.remove('intro'); hinted = true; $('help').classList.add('gone');
   const nextIdx = fromIdx + 1 < N ? fromIdx + 1 : fromIdx;
   focusIdx = nextIdx; view.yaw = windows.items[fromIdx].yaw; view.fov = FOV.enter;
   renderCard(nextIdx);
@@ -204,8 +198,8 @@ document.addEventListener('keydown', e => {
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
-  if (k === 'ArrowRight') { e.preventDefault(); turnTo(focusIdx + 1); }
-  else if (k === 'ArrowLeft') { e.preventDefault(); turnTo(focusIdx - 1); }
+  if (k === 'ArrowRight') { e.preventDefault(); turnTo(focusIdx + 1); dropHint(); }
+  else if (k === 'ArrowLeft') { e.preventDefault(); turnTo(focusIdx - 1); dropHint(); }
   else if (k === 'ArrowUp') { e.preventDefault(); animateTo({ pitch: clamp(view.pitch + 0.25, PITCH.min, PITCH.max) }, 400); }
   else if (k === 'ArrowDown') { e.preventDefault(); animateTo({ pitch: clamp(view.pitch - 0.25, PITCH.min, PITCH.max) }, 400); }
   else if (k === 'Enter' && tag !== 'button' && tag !== 'a') { e.preventDefault(); enter(focusIdx); }
@@ -213,7 +207,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'l' || k === 'L') toggleList();
   else if (k === 'n' || k === 'N') setTts(!narrator.enabled);
   else if (k === 'd' || k === 'D') narrator.say(HUB.facing(CHAPTERS[focusIdx], focusIdx, N));
-  else if (k === 'Escape' && !$('list').hidden) toggleList(false);
+  else if (k === 'Escape') { if (settings.isOpen()) settings.close(); else if (!$('list').hidden) toggleList(false); }
 });
 
 // ---------- loop ----------
@@ -235,7 +229,7 @@ function loop(now) {
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
-buildList(); syncTts(); syncAmb(); syncRm(); resize();
+buildList(); resize();
 if (fromIdx < 0) renderCard(0);
 requestAnimationFrame(loop);
 window.__hub = { view, focus: () => focusIdx };

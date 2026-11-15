@@ -8,8 +8,8 @@ export const content = {
   heroText: 'Carbon dioxide pours out of cities, power plants and fires, and the winds tear it around the globe in fast, restless currents. One piano follows one rule: <b>when CO₂ rises, the piano races; when it falls, it crawls</b>. Pick any city, country or spot on the map and listen to the plumes arrive and clear.',
   intro: 'Carbon Currents. || The streaks you see are winds, | carrying carbon dioxide from our cities and fires | around the whole planet. || Choose a place, | and listen. | When a plume arrives, | the piano *races*.',
   banner: '<b>Simulated data.</b> The CO₂ and winds here come from a simplified simulation modelled on NASA’s DYAMOND CO₂ visualisation (January–March 2020). The page shows how the experience works and is not a source of real measurements. <a href="#data">About the data</a>',
-  startButton: '▶ Start listening',
-  guideButton: '🎧 Audio guide: learn the 3 rules',
+  startButton: 'Start listening',
+  guideButton: 'Audio guide: learn the 3 rules',
   welcome: 'Welcome. Search for a place or click the map to drop a pin.',
 
   quickPicks: [['Singapore', 'city'], ['Delhi', 'city'], ['Beijing', 'city'], ['Houston', 'city'], ['London', 'city'], ['Lagos', 'city'],

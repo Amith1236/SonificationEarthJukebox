@@ -72,12 +72,11 @@ export const CHAPTERS = [
 // Words spoken and shown in the hub
 export const HUB = {
   splash: {
-    eyebrow: 'NASA Space Apps 2026 · Earth Information Jukebox',
-    title: 'Listen to the <em>air</em> from orbit',
-    body: 'You are floating in low Earth orbit, four hundred kilometres above the planet. Around you hang four windows onto NASA data about the air we breathe: <b>aerosols</b>, <b>carbon dioxide</b>, the <b>forest canopy</b> and <b>nitrogen dioxide</b>. Each one turns its data into music. Turn to a window and step inside to explore it by ear.',
-    begin: '✦ Begin the journey',
-    list: 'Start in list view (screen-reader friendly)',
-    small: 'Headphones recommended · a narrator guides you (turn it off with the 🗣 button or <kbd>N</kbd> if you use a screen reader)',
+    title: 'Earth Information <em>Jukebox</em>',
+    body: 'Four works of sound made from NASA observations of the air, hung in low Earth orbit.',
+    begin: 'Enter the gallery',
+    list: 'Text-only index',
+    small: 'Best with headphones. A narrator guides you; press <kbd>N</kbd> to silence it.',
   },
   intro: 'Four hundred kilometres up, | the Earth turns slowly beneath us. || From here, | the air looks thin as a line of light | along the horizon. || Yet everything we breathe | is held inside it. || Around us | hang four windows. | Each one listens to that air | and turns what it hears into *music*. || Our journey begins with the first.',
   facing: (ch, i, n) => `Chapter ${i + 1} of ${n}. | ${ch.title}. || ${ch.story}${ch.note ? ' || ' + ch.note : ''} || Press Enter to step inside.`,
@@ -86,8 +85,8 @@ export const HUB = {
     ? `Back in orbit. || You have heard ${from.title}. | Ahead of you waits the next chapter: | ${next.title}.`
     : `Back in orbit. || You have heard every chapter of the journey. | Below us, | the thin blue line of air holds all of it: | the dust, the gases, the forests. || Thank you for listening.`,
   listMode: 'List view open. Each chapter has an Open button. The built-in narrator is off; turn it on with the Narration button.',
-  help: 'Drag to look around · <kbd>←</kbd><kbd>→</kbd> next window · <kbd>Enter</kbd> go in · <kbd>1</kbd>–<kbd>4</kbd> jump · <kbd>N</kbd> narration · <kbd>L</kbd> list · <kbd>D</kbd> describe',
-  credits: 'Earth imagery: NASA Blue Marble and Black Marble (via three.js examples). Data: NASA GMAO GEOS, GEOS-CF, GEDI and SVS DYAMOND.',
+  help: 'Drag to look around · arrow keys to move between works · Enter to step inside',
+  credits: 'Earth: NASA Blue Marble and Black Marble. Data: NASA GMAO GEOS, GEOS-CF, GEDI and SVS DYAMOND.',
 };
 
 export const chapterIndex = id => CHAPTERS.findIndex(c => c.id === id);

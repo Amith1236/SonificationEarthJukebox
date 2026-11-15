@@ -186,7 +186,7 @@ async function play() {
   if (S.playing) return;
   setupLayerAudio();
   S.playing = true; nextT = ac.currentTime + 0.06; step = 0; timer = setInterval(schedule, 25);
-  $('playBtn').textContent = '❚❚ Pause'; $('playBtn').setAttribute('aria-pressed', 'true');
+  $('playBtn').textContent = 'Pause'; $('playBtn').setAttribute('aria-pressed', 'true');
   $('startOverlay').style.display = 'none';
   if (S.mode === 'story') {
     if (S.ended || (S.storyIdx === 0 && S.storyStep === 0)) { S.ended = false; say(content.journey.intro); goStop(0, true); }
@@ -197,7 +197,7 @@ function pause() {
   S.playing = false; clearInterval(timer); timer = null; visQ.length = 0;
   if (ac) Object.values(beds).forEach(b => b.set(0, ac.currentTime));
   shell.narrator.hush();
-  $('playBtn').textContent = '▶ Play'; $('playBtn').setAttribute('aria-pressed', 'false');
+  $('playBtn').textContent = 'Play'; $('playBtn').setAttribute('aria-pressed', 'false');
 }
 
 // ---------- journey ----------

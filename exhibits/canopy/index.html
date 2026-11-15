@@ -12,74 +12,73 @@
 <body>
 <header id="ej-shell"></header>
 
-<main id="main" class="wrap">
-  <div class="eyebrow" id="kicker"></div>
-  <h1 id="title"></h1>
-  <p class="lede" id="lede"></p>
-  <p class="note" id="sampleNote" hidden></p>
+<main id="main" class="room">
+  <div class="sr-only"><p id="kicker"></p><p id="title"></p><p id="lede"></p></div>
 
-  <div class="grid">
-    <div class="stage">
-      <div class="mapbox">
-        <canvas id="map" tabindex="0" role="img" aria-describedby="maphelp"></canvas>
-        <div class="legend" aria-hidden="true">
-          <div>Canopy height, RH100</div>
-          <div class="bar"></div>
-          <div class="ticks"><span>0 m</span><span>25 m</span><span>50 m</span></div>
-          <div class="ash"><i></i> heard, now ash · <b>×</b> thinned forest</div>
-        </div>
-        <div id="startOverlay"><button class="big" id="startBtn"></button><p id="startHint"></p></div>
+  <figure class="piece wide">
+    <div class="mapbox">
+      <canvas id="map" tabindex="0" role="img" aria-describedby="maphelp"></canvas>
+      <div class="legend" aria-hidden="true">
+        <div class="bar"></div>
+        <div class="ticks"><span>0</span><span>25</span><span>50 m</span></div>
       </div>
-      <div class="transport" role="group" aria-label="Station controls">
-        <button id="playBtn" class="primary" aria-keyshortcuts="Space">▶ Play</button>
-        <button id="prevPass" aria-keyshortcuts="PageUp">⇤ Pass</button>
-        <button id="prevFp" aria-label="Previous footprint" aria-keyshortcuts="ArrowLeft">◀</button>
-        <button id="nextFp" aria-label="Next footprint" aria-keyshortcuts="ArrowRight">▶</button>
-        <button id="nextPass" aria-keyshortcuts="PageDown">Pass ⇥</button>
-        <button id="describeBtn" aria-keyshortcuts="D">🔊 Describe</button>
-        <button id="resetBtn">↺ Restore the forest</button>
-        <label class="vol">Volume <input id="vol" type="range" min="0" max="100" value="80"></label>
-      </div>
-      <p id="maphelp" class="maphelp">Hover or click the footprints, or focus the map and use <kbd>←</kbd><kbd>→</kbd> to step along the station’s path, <kbd>PgUp</kbd><kbd>PgDn</kbd> to change pass, <kbd>Space</kbd> to let the station fly, <kbd>D</kbd> to describe.</p>
+      <p class="subtitle" id="cap" aria-live="off"></p>
+      <div id="startOverlay" class="startover"><button class="big" id="startBtn"></button><p id="startHint"></p></div>
+    </div>
+  </figure>
+
+  <div class="plinth">
+    <div id="ej-label"></div>
+    <div class="transport" role="group" aria-label="Station controls">
+      <button id="prevPass" aria-label="Previous pass" aria-keyshortcuts="PageUp">⇤</button>
+      <button id="prevFp" aria-label="Previous footprint" aria-keyshortcuts="ArrowLeft">‹</button>
+      <button id="playBtn" class="primary" aria-keyshortcuts="Space">Play</button>
+      <button id="nextFp" aria-label="Next footprint" aria-keyshortcuts="ArrowRight">›</button>
+      <button id="nextPass" aria-label="Next pass" aria-keyshortcuts="PageDown">⇥</button>
+      <button id="describeBtn" aria-keyshortcuts="D">Describe</button>
+    </div>
+  </div>
+
+  <aside id="ej-drawer" aria-label="Controls and readings">
+    <div class="panel">
+      <h2>Footprint</h2>
+      <dl>
+        <dt>Pass</dt><dd id="cPass">—</dd>
+        <dt>Coordinates</dt><dd id="cCoords">—</dd>
+        <dt>Canopy height</dt><dd id="cRh100">—</dd>
+        <dt>ML predicted</dt><dd id="cPred">—</dd>
+        <dt>Canopy cover</dt><dd id="cCover">—</dd>
+        <dt>Biomass</dt><dd id="cAgb">—</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h2>The forest so far</h2>
+      <dl>
+        <dt>Heard</dt><dd id="fHeard">0</dd>
+        <dt>Mean height</dt><dd id="fMean">—</dd>
+        <dt>Thinned</dt><dd id="fLost">—</dd>
+      </dl>
+      <div class="life" aria-hidden="true"><i id="lifeBar"></i></div>
+    </div>
+    <div class="panel">
+      <h2>Spatial ML validation</h2>
+      <dl>
+        <dt>Footprints</dt><dd id="mShots">Loading…</dd>
+        <dt>Spatial RMSE</dt><dd id="mRmse">—</dd>
+        <dt>Spatial R²</dt><dd id="mR2">—</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h2>Sound</h2>
+      <div class="row"><label class="vol">Volume <input id="vol" type="range" min="0" max="100" value="80"></label><button id="resetBtn">Restore the forest</button></div>
+    </div>
+    <div class="panel">
+      <p class="note" id="sampleNote" hidden></p>
+      <p id="maphelp" class="maphelp">Hover or click the footprints, or focus the map: <kbd>←</kbd><kbd>→</kbd> step along the path, <kbd>PgUp</kbd><kbd>PgDn</kbd> change pass, <kbd>Space</kbd> fly, <kbd>D</kbd> describe.</p>
+      <details class="how"><summary>How the sound is made</summary><ul id="howList"></ul></details>
       <p id="about" class="about"></p>
     </div>
-
-    <aside class="side" aria-label="Footprint telemetry">
-      <div class="panel">
-        <h2>Footprint</h2>
-        <dl>
-          <dt>Pass</dt><dd id="cPass">—</dd>
-          <dt>Coordinates</dt><dd id="cCoords">—</dd>
-          <dt>Canopy height</dt><dd id="cRh100">—</dd>
-          <dt>ML predicted</dt><dd id="cPred">—</dd>
-          <dt>Canopy cover</dt><dd id="cCover">—</dd>
-          <dt>Biomass</dt><dd id="cAgb">—</dd>
-        </dl>
-      </div>
-      <div class="panel">
-        <h2>The forest so far</h2>
-        <dl>
-          <dt>Heard</dt><dd id="fHeard">0</dd>
-          <dt>Mean height</dt><dd id="fMean">—</dd>
-          <dt>Thinned</dt><dd id="fLost">—</dd>
-        </dl>
-        <div class="life" aria-hidden="true"><i id="lifeBar"></i></div>
-      </div>
-      <div class="panel">
-        <h2>Spatial ML validation</h2>
-        <dl>
-          <dt>Footprints</dt><dd id="mShots">Loading…</dd>
-          <dt>Spatial RMSE</dt><dd id="mRmse">—</dd>
-          <dt>Spatial R²</dt><dd id="mR2">—</dd>
-        </dl>
-      </div>
-      <div class="panel">
-        <h2>Narration</h2>
-        <p id="cap" class="cap">—</p>
-      </div>
-      <details class="panel how"><summary>How the sound is made</summary><ul id="howList"></ul></details>
-    </aside>
-  </div>
+  </aside>
 
   <section id="ej-next" aria-label="Continue the journey"></section>
   <footer class="ej-foot" id="foot"></footer>

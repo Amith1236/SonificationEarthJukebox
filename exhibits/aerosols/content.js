@@ -13,7 +13,7 @@ export const content = {
   lede: 'NASA’s GEOS model tracks the tiny particles that drift through our air: desert dust, wildfire smoke, sea salt and volcanic sulfates. Here each one is a section of an orchestra. Follow the journey from hotspot to hotspot, or take the lens and listen anywhere on Earth.',
   about: '<strong>About this frame:</strong> GEOS model aerosols on 19 August 2025. Hurricane Erin pulls in Saharan dust while more dust crosses the Atlantic; volcanic sulfate plumes rise from Kīlauea and Mount Etna; smoke drifts from agricultural burning in southern Africa and wildfires in Spain; sea salt is whipped up by storms over the Southern Ocean. Colours: <b style="color:#d59bff">dust</b> violet, <b style="color:#ff8a5c">smoke</b> orange-red, <b style="color:#7fb6ff">sea salt</b> blue, <b style="color:#6dff7e">sulfates</b> green.',
   image: { src: '/data/aerosols/aerosols.png', alt: 'World map of aerosols from the NASA GEOS model on 19 August 2025', width: 1500, height: 1179 },
-  startButton: '▶ Begin the journey',
+  startButton: 'Begin the journey',
   startHint: 'Sound on · headphones recommended',
   idleCaption: 'Move over the map to hear what is in the air there.',
 

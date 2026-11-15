@@ -7,7 +7,7 @@ export const content = {
   title: 'The Waning Canopy',
   kicker: 'NASA GEDI lidar on the International Space Station · canopy height (RH100)',
   lede: 'GEDI is a laser on the International Space Station. On every pass it fires down through the forest and times the echo, measuring how tall the canopy stands, footprint by footprint. Follow the station’s paths over the Amazon. Where the giants still stand, bells ring high. Where the forest has fallen, the music sinks into a low, grieving drone.',
-  startButton: '▶ Follow the station',
+  startButton: 'Follow the station',
   startHint: 'Sound on · headphones recommended',
 
   intro: 'Four hundred kilometres above the Amazon, | the space station crosses the forest. || Its laser touches each tree | and listens for the echo. || Tall canopy rings out, | high and clear. || But listen closely… | for the places where the bells | fall *silent*.',

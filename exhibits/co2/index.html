@@ -12,104 +12,97 @@
 <body>
 <header id="ej-shell"></header>
 
-<main id="main" class="wrap">
-  <section class="hero" aria-labelledby="heroTitle">
-    <h1 id="heroTitle"></h1>
-    <p id="heroText"></p>
-    <div class="cta">
-      <button id="startBtn" class="primary"></button>
-      <button id="guideBtn"></button>
-      <span class="mute small">Shortcuts: <kbd>Space</kbd> play/pause, <kbd>D</kbd> describe, <kbd>/</kbd> search, <kbd>T</kbd> transcript.</span>
-    </div>
-    <p class="banner" role="note" id="banner"></p>
-  </section>
+<main id="main" class="room">
+  <div class="sr-only"><p id="heroTitle"></p><p id="heroText"></p></div>
 
-  <section id="explore" class="explore" aria-labelledby="exploreTitle" tabindex="-1">
-    <div>
-      <h2 id="exploreTitle" class="sr-only">Explore the map</h2>
+  <figure class="piece wide" id="explore" tabindex="-1">
+    <div class="mapbox">
+      <canvas id="map" tabindex="0" role="application" aria-roledescription="interactive map" aria-label="World map" aria-describedby="maphelp"></canvas>
       <div class="search">
-        <div class="field">
-          <label for="q">Find a city, country or region</label>
-          <input id="q" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugs" autocomplete="off" placeholder="e.g. Singapore, India, Eastern US…" aria-describedby="qhelp">
-          <span id="qhelp" class="sr-only">Type to see suggestions. Use the up and down arrows to choose, Enter to select.</span>
-          <ul id="sugs" role="listbox" aria-label="Suggestions" hidden></ul>
-        </div>
-        <button id="worldBtn">🌍 Whole world</button>
+        <label for="q" class="sr-only">Find a city, country or region</label>
+        <input id="q" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugs" autocomplete="off" placeholder="Find a place" aria-describedby="qhelp">
+        <span id="qhelp" class="sr-only">Type to see suggestions. Use the up and down arrows to choose, Enter to select.</span>
+        <ul id="sugs" role="listbox" aria-label="Suggestions" hidden></ul>
       </div>
-      <div class="chips" role="group" aria-label="Quick picks"><span class="label">Quick picks:</span></div>
-
-      <div class="mapbox">
-        <canvas id="map" tabindex="0" role="application" aria-roledescription="interactive map" aria-label="World map" aria-describedby="maphelp"></canvas>
-        <div class="mapctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button></div>
-        <div class="legend" aria-hidden="true">
-          <div>CO₂ (ppm), NASA SVS colour scale</div>
-          <div class="bar"></div>
-          <div class="ticks"><span>380</span><span>420</span><span>440</span><span>460</span></div>
-        </div>
-        <div class="loading" id="loading">Loading the planet…</div>
+      <div class="mapctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="worldBtn" aria-label="Whole world">⌂</button></div>
+      <div class="legend" aria-hidden="true">
+        <div class="bar"></div>
+        <div class="ticks"><span>380</span><span>420</span><span>440</span><span>460 ppm</span></div>
       </div>
-      <p id="maphelp" class="maphelp">Click the map to drop a pin, drag to pan, scroll to zoom. With the map focused, the <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> keys move the pin (<kbd>Shift</kbd> for bigger steps), <kbd>+</kbd>/<kbd>−</kbd> zoom, <kbd>Enter</kbd> describes the pinned place and <kbd>0</kbd> returns to the whole world.</p>
+      <div class="loading" id="loading">Loading the planet…</div>
+      <div id="startOverlay" class="startover"><button id="startBtn" class="big"></button><p>Sound on · headphones recommended</p></div>
+    </div>
+  </figure>
 
-      <div class="timeline" role="group" aria-label="Timeline">
-        <button id="playBtn" class="primary" aria-keyshortcuts="Space">▶ Play</button>
-        <label class="sr-only" for="time">Date and time</label>
-        <input id="time" type="range" min="0" max="2183" step="1" value="0">
-        <div class="date" id="dateOut" aria-hidden="true">1 Jan 2020<small>00:00 UTC</small></div>
-        <div class="row2">
-          <span class="label">Jump to:</span>
-          <button data-jump="0">January</button><button data-jump="744">February</button><button data-jump="1440">March</button>
-          <span class="label"><label for="speed">Speed:</label></span>
-          <select id="speed">
-            <option value="1.5">1 day every 16 s</option>
-            <option value="3">1 day every 8 s</option>
-            <option value="6">1 day every 4 s</option>
-            <option value="12">1 day every 2 s</option>
-            <option value="24">1 day per second</option>
-          </select>
-        </div>
-        <div id="progress">Preparing the simulation…</div>
+  <div class="plinth">
+    <div id="ej-label"></div>
+    <div class="transport timeline" role="group" aria-label="Timeline">
+      <button id="playBtn" class="primary" aria-keyshortcuts="Space">Play</button>
+      <label class="sr-only" for="time">Date and time</label>
+      <input id="time" type="range" min="0" max="2183" step="1" value="0">
+      <div class="date" id="dateOut" aria-hidden="true">1 Jan 2020<small>00:00 UTC</small></div>
+      <button id="descBtn" aria-keyshortcuts="D">Describe</button>
+    </div>
+  </div>
+
+  <aside id="ej-drawer" aria-label="Controls and readings">
+    <div class="panel">
+      <h2>Listening to</h2>
+      <div class="place" id="placeName">The whole world<small id="placeSub">Pick a place to hear its CO₂</small></div>
+      <dl class="stats">
+        <dt>CO₂</dt><dd><span id="sPpm">–</span><div class="ppmbar" aria-hidden="true"><i id="sPpmBar"></i></div></dd>
+        <dt>Trend</dt><dd id="sTrend">–</dd>
+        <dt>Wind</dt><dd id="sWind">–</dd>
+        <dt>Local time</dt><dd id="sTime">–</dd>
+        <dt>Nearby</dt><dd id="sNear">–</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h2>Places</h2>
+      <div class="chips" role="group" aria-label="Quick picks"></div>
+    </div>
+    <div class="panel">
+      <h2>What you’re hearing</h2>
+      <div class="hearing" id="hearing">Press Play to begin the theme.</div>
+      <div class="layers"><button id="guideBtn"></button><button id="rangeBtn">Hear the range</button></div>
+    </div>
+    <div class="panel">
+      <h2>Time</h2>
+      <div class="row2">
+        <button data-jump="0">Jan</button><button data-jump="744">Feb</button><button data-jump="1440">Mar</button>
+        <label class="sr-only" for="speed">Speed</label>
+        <select id="speed">
+          <option value="1.5">1 day / 16 s</option>
+          <option value="3">1 day / 8 s</option>
+          <option value="6">1 day / 4 s</option>
+          <option value="12">1 day / 2 s</option>
+          <option value="24">1 day / s</option>
+        </select>
+      </div>
+      <p id="progress" class="help">Preparing the simulation…</p>
+    </div>
+    <div class="panel">
+      <h2>Narration</h2>
+      <p id="live" class="help"></p>
+      <div class="actions">
+        <label class="sr-only" for="narrSel">How often to narrate</label>
+        <select id="narrSel"><option value="key">Announce key changes</option><option value="30">Every 30 seconds</option><option value="off">Only when I ask</option></select>
+        <button id="volDown" aria-label="Volume down">Vol −</button>
+        <button id="volUp" aria-label="Volume up">Vol +</button>
       </div>
     </div>
-
-    <aside class="side" aria-label="Listening panel">
-      <div class="panel">
-        <h2>Listening to</h2>
-        <div class="place" id="placeName">The whole world<small id="placeSub">Pick a place to hear its CO₂</small></div>
-        <dl class="stats">
-          <dt>CO₂</dt><dd><span id="sPpm">–</span><div class="ppmbar" aria-hidden="true"><i id="sPpmBar"></i></div></dd>
-          <dt>Trend</dt><dd id="sTrend">–</dd>
-          <dt>Wind</dt><dd id="sWind">–</dd>
-          <dt>Local time</dt><dd id="sTime">–</dd>
-          <dt>Nearby</dt><dd id="sNear">–</dd>
-        </dl>
-      </div>
-      <div class="panel">
-        <h2>What you’re hearing</h2>
-        <div class="hearing" id="hearing">Press <b>Start listening</b> to begin the theme.</div>
-        <div class="layers"><button id="rangeBtn">🎹 Hear the range (falling → rising)</button></div>
-      </div>
-      <div class="panel">
-        <h2>Narration</h2>
-        <p id="live"></p>
-        <div class="actions">
-          <button id="descBtn" aria-keyshortcuts="D">🗣 Describe now</button>
-          <label class="sr-only" for="narrSel">How often to narrate</label>
-          <select id="narrSel"><option value="key">Announce key changes</option><option value="30">Every 30 seconds</option><option value="off">Only when I ask</option></select>
-          <button id="volDown" aria-label="Volume down">🔉</button>
-          <button id="volUp" aria-label="Volume up">🔊</button>
-        </div>
-      </div>
-    </aside>
-  </section>
-
-  <section id="how" class="info" aria-labelledby="howTitle">
-    <h2 id="howTitle">How it sounds</h2>
-    <p id="howIntro"></p>
-    <table class="map"><thead><tr><th scope="col">CO₂ over the last 4 hours</th><th scope="col">Tempo</th><th scope="col">What it means</th></tr></thead><tbody id="howRows"></tbody></table>
-    <p id="howOutro"></p>
-  </section>
-  <section id="data" class="info" aria-labelledby="dataTitle"><h2 id="dataTitle">About the data</h2><div id="dataParas"></div></section>
-  <section id="access" class="info" aria-labelledby="accessTitle"><h2 id="accessTitle">Accessibility</h2><div class="grid3" id="accessCards"></div></section>
+    <div class="panel">
+      <p class="banner" role="note" id="banner"></p>
+      <p id="maphelp" class="maphelp">Click the map to drop a pin, drag to pan, scroll to zoom. With the map focused: <kbd>←↑→↓</kbd> move the pin, <kbd>+</kbd><kbd>−</kbd> zoom, <kbd>Enter</kbd> describe, <kbd>0</kbd> whole world, <kbd>/</kbd> search.</p>
+      <details><summary>How it sounds</summary>
+        <p id="howIntro"></p>
+        <table class="map"><thead><tr><th scope="col">CO₂, last 4 h</th><th scope="col">Tempo</th><th scope="col">Meaning</th></tr></thead><tbody id="howRows"></tbody></table>
+        <p id="howOutro"></p>
+      </details>
+      <details id="data"><summary>About the data</summary><div id="dataParas"></div></details>
+      <details><summary>Accessibility</summary><div id="accessCards"></div></details>
+    </div>
+  </aside>
 
   <section id="ej-next" aria-label="Continue the journey"></section>
   <footer class="ej-foot" id="foot"></footer>

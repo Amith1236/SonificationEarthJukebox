@@ -1,22 +1,25 @@
 // The planet beneath the visitor: a day/night Earth with clouds, ocean glint and
-// a glowing atmosphere limb. Units: Earth radius R = 100, orbit altitude ALT
-// (420 km ≈ 6.6 units; slightly exaggerated so the curve reads well on screen).
+// a glowing atmosphere limb. Units: Earth radius R = 100.
+// ALT is how high the gallery floats. Real ISS altitude would be ~6.6, but from
+// that height you only see a sliver of blurry horizon; ~20 shows the curve of
+// the planet with readable continents and clouds.
 import * as THREE from 'three';
 
 export const EARTH = {
   R: 100,
-  ALT: 4.6,
-  ATMOS: 2.8,                       // thickness of the glowing limb
-  orbitSpeed: 0.0009,               // rad/s the ground drifts beneath us (≈ ISS ground speed, visually)
-  tilt: 0.9,                        // orbit inclination look (radians) – which way "forward" runs over the map
+  ALT: 20,
+  ATMOS: 3.2,                       // thickness of the glowing limb
+  orbitSpeed: 0.0012,               // rad/s the ground drifts beneath us
+  tilt: 0.9,                        // orbit inclination look (radians)
   sunDir: new THREE.Vector3(0.9, 0.22, -0.38).normalize(),
 };
 
+// 4K NASA Blue Marble / Black Marble (via the three.js examples).
+// The third map packs bump (r), roughness (g) and clouds (b) into one image.
 const TEX = {
-  day: '/textures/earth_atmos_2048.jpg',
-  night: '/textures/earth_lights_2048.png',
-  cloud: '/textures/earth_clouds_1024.png',
-  spec: '/textures/earth_specular_2048.jpg',
+  day: '/textures/earth_day_4096.jpg',
+  night: '/textures/earth_night_4096.jpg',
+  brc: '/textures/earth_bump_roughness_clouds_4096.jpg',
 };
 
 const earthVert = /* glsl */`
@@ -29,31 +32,35 @@ const earthVert = /* glsl */`
   }`;
 
 const earthFrag = /* glsl */`
-  uniform sampler2D dayMap, nightMap, cloudMap, specMap;
+  uniform sampler2D dayMap, nightMap, brcMap;
   uniform vec3 sunDir; uniform float cloudShift; uniform float hasTex;
   varying vec2 vUv; varying vec3 vN; varying vec3 vP;
   void main() {
     vec3 n = normalize(vN);
     vec3 v = normalize(cameraPosition - vP);
     float ndl = dot(n, sunDir);
-    float dayMix = smoothstep(-0.12, 0.28, ndl);
-    vec3 day = mix(vec3(0.05, 0.16, 0.32), texture2D(dayMap, vUv).rgb, hasTex);
+    float dayMix = smoothstep(-0.10, 0.22, ndl);
+    vec3 day = mix(vec3(0.04, 0.12, 0.26), texture2D(dayMap, vUv).rgb, hasTex);
     vec3 night = texture2D(nightMap, vUv).rgb * hasTex;
-    float cloud = texture2D(cloudMap, vUv + vec2(cloudShift, 0.0)).r * hasTex;
+    vec3 brc = texture2D(brcMap, vUv).rgb;
+    float cloud = smoothstep(0.15, 1.0, texture2D(brcMap, vUv + vec2(cloudShift, 0.0)).b) * hasTex;
+    float rough = mix(1.0, brc.g, hasTex);
     float lit = max(ndl, 0.0);
-    vec3 dayCol = day * (0.06 + 1.05 * lit);
-    dayCol = mix(dayCol, vec3(0.96, 0.98, 1.0) * (0.04 + 1.0 * lit), cloud * 0.88);
+    vec3 dayCol = day * (0.03 + 1.15 * pow(lit, 0.8));
+    dayCol = mix(dayCol, vec3(1.0) * (0.02 + 1.05 * lit), cloud * 0.92);
     vec3 h = normalize(sunDir + v);
-    float spec = pow(max(dot(n, h), 0.0), 38.0) * texture2D(specMap, vUv).r * (1.0 - cloud) * 0.7;
-    vec3 nightCol = night * vec3(1.0, 0.78, 0.48) * 1.5 * (1.0 - cloud * 0.85) + vec3(0.004, 0.008, 0.02);
-    vec3 col = mix(nightCol, dayCol, dayMix) + spec * vec3(1.0, 0.92, 0.78) * dayMix;
-    // haze: looking through the atmosphere toward the horizon
-    float fres = pow(1.0 - max(dot(n, v), 0.0), 2.6);
-    float sunSide = smoothstep(-0.25, 0.45, ndl);
-    vec3 haze = mix(vec3(0.03, 0.06, 0.14), vec3(0.32, 0.56, 1.0), sunSide);
-    float terminator = pow(1.0 - abs(ndl), 8.0);
-    haze = mix(haze, vec3(1.0, 0.52, 0.28), terminator * 0.55);
-    col = mix(col, haze, fres * 0.85);
+    float ocean = 1.0 - smoothstep(0.25, 0.6, rough);
+    float spec = pow(max(dot(n, h), 0.0), 60.0) * ocean * (1.0 - cloud) * 1.1;
+    vec3 nightCol = night * vec3(1.0, 0.8, 0.5) * 1.8 * (1.0 - cloud * 0.9);
+    vec3 col = mix(nightCol, dayCol, dayMix) + spec * vec3(1.0, 0.9, 0.75) * dayMix;
+    // thin haze only toward the limb, where we look through more air
+    float ndv = max(dot(n, v), 0.0);
+    float fres = pow(1.0 - ndv, 5.0);
+    float sunSide = smoothstep(-0.2, 0.4, ndl);
+    vec3 haze = mix(vec3(0.0, 0.01, 0.03), vec3(0.35, 0.6, 1.0), sunSide);
+    float terminator = pow(1.0 - abs(ndl), 10.0);
+    haze = mix(haze, vec3(1.0, 0.5, 0.25), terminator * 0.5 * sunSide);
+    col = mix(col, haze, fres * 0.75);
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -73,13 +80,13 @@ const atmosFrag = /* glsl */`
     float hgt = length(closest - center);
     if (hgt < R) discard;                       // behind the planet
     float x = clamp((hgt - R) / (Ra - R), 0.0, 1.0);
-    float glow = pow(1.0 - x, 2.2) * smoothstep(1.0, 0.82, x);
+    float glow = pow(1.0 - x, 2.6);
     vec3 up = normalize(closest - center);
     float s = dot(up, sunDir);
-    float sun = smoothstep(-0.45, 0.35, s);
-    vec3 col = mix(vec3(0.22, 0.42, 1.0), vec3(0.62, 0.82, 1.0), 1.0 - x);
-    col = mix(col, vec3(1.0, 0.5, 0.25), pow(1.0 - abs(s), 7.0) * 0.7 * (1.0 - x));
-    col *= glow * (0.06 + 1.25 * sun);
+    float sun = smoothstep(-0.4, 0.3, s);
+    vec3 col = mix(vec3(0.18, 0.38, 1.0), vec3(0.6, 0.82, 1.0), pow(1.0 - x, 3.0));
+    col = mix(col, vec3(1.0, 0.5, 0.25), pow(1.0 - abs(s), 8.0) * 0.7 * (1.0 - x));
+    col *= glow * (0.04 + 1.3 * sun);
     gl_FragColor = vec4(col, 1.0);
     #include <colorspace_fragment>
   }`;
@@ -97,22 +104,23 @@ export function createEarth(scene, renderer) {
   const loader = new THREE.TextureLoader();
   const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); blank.needsUpdate = true;
   const uniforms = {
-    dayMap: { value: blank }, nightMap: { value: blank }, cloudMap: { value: blank }, specMap: { value: blank },
+    dayMap: { value: blank }, nightMap: { value: blank }, brcMap: { value: blank },
     sunDir: { value: EARTH.sunDir }, cloudShift: { value: 0 }, hasTex: { value: 0 },
   };
   let loaded = 0;
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
-  for (const [k, url] of Object.entries(TEX)) {
-    loader.load(url, tex => {
-      tex.colorSpace = k === 'day' || k === 'night' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  const keys = Object.keys(TEX);
+  for (const k of keys) {
+    loader.load(TEX[k], tex => {
+      tex.colorSpace = k === 'brc' ? THREE.NoColorSpace : THREE.SRGBColorSpace;
       tex.anisotropy = maxAniso; tex.wrapS = THREE.RepeatWrapping;
       uniforms[k + 'Map'].value = tex;
-      if (++loaded === 4) uniforms.hasTex.value = 1;
+      if (++loaded === keys.length) uniforms.hasTex.value = 1;
     }, undefined, () => { /* texture failed: the planet stays a soft blue fallback sphere */ });
   }
 
   const planet = new THREE.Mesh(
-    new THREE.SphereGeometry(R, 192, 128),
+    new THREE.SphereGeometry(R, 256, 160),
     new THREE.ShaderMaterial({ uniforms, vertexShader: earthVert, fragmentShader: earthFrag }),
   );
   // start over the Atlantic / West Africa so the first view has land, cloud and a terminator
@@ -120,7 +128,7 @@ export function createEarth(scene, renderer) {
   spin.add(planet);
 
   const atmos = new THREE.Mesh(
-    new THREE.SphereGeometry(R + ATMOS, 128, 96),
+    new THREE.SphereGeometry(R + ATMOS, 160, 120),
     new THREE.ShaderMaterial({
       uniforms: { center: { value: center }, R: { value: R }, Ra: { value: R + ATMOS }, sunDir: { value: EARTH.sunDir } },
       vertexShader: atmosVert, fragmentShader: atmosFrag,

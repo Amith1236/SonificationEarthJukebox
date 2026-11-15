@@ -50,7 +50,7 @@ const proj = geoEquirectangular(), path = geoPath(proj, g);
 let W = 0, H = 0, DPR = 1, HK = 3;
 const bg = document.createElement('canvas'), bgc = bg.getContext('2d');
 function resize() {
-  DPR = Math.min(2, devicePixelRatio || 1); W = cv.parentElement.clientWidth; H = Math.round(Math.min(W * 0.62, innerHeight * 0.72));
+  DPR = Math.min(2, devicePixelRatio || 1); W = cv.parentElement.clientWidth; H = Math.round(Math.max(300, Math.min(W * 0.62, innerHeight - 250)));
   cv.width = bg.width = W * DPR; cv.height = bg.height = H * DPR; cv.style.height = H + 'px';
   proj.fitExtent([[20, 20], [W - 20, H - 20]], frame);
   HK = H / 300;                                   // pixels per metre of canopy
@@ -161,7 +161,7 @@ function finish() {
 }
 function setPlaying(on, silent) {
   S.playing = on;
-  $('playBtn').textContent = on ? '❚❚ Pause' : '▶ Play'; $('playBtn').setAttribute('aria-pressed', String(on));
+  $('playBtn').textContent = on ? 'Pause' : 'Play'; $('playBtn').setAttribute('aria-pressed', String(on));
   if (on) {
     initAudio(); $('startOverlay').hidden = true;
     if (!S.started) { S.started = true; shell.say(content.intro); caption(content.intro); flightTimer = setTimeout(() => flyFrom(S.idx), 9000); }
@@ -245,6 +245,6 @@ $('vol').addEventListener('input', e => audio?.setVolume(e.target.value / 100));
 prefs.onChange(() => drawBackground());
 addEventListener('resize', () => { clearTimeout(window.__rz); window.__rz = setTimeout(resize, 120); });
 
-resize(); showCell(0); updateForestStats(); caption(content.lede);
+resize(); showCell(0); updateForestStats();
 cv.setAttribute('aria-label', `GEDI canopy height map: ${cells.length} footprints along ${passes.length} ISS passes over the Amazon. Use the arrow keys to step through them.`);
 requestAnimationFrame(draw);

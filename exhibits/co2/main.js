@@ -54,7 +54,7 @@ const toLonLat = (x, y) => { const s = scale(); return [wrap180(viewState.lon + 
 
 function resize() {
   const r = map.parentElement.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = Math.round(r.width); H = Math.round(Math.max(320, Math.min(W / 2, window.innerHeight * 0.68)));
+  W = Math.round(r.width); H = Math.round(Math.max(300, Math.min(W / 2, window.innerHeight - 250)));
   [map, base, trails].forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   map.style.height = H + 'px';
   [mctx, bctx, tctx].forEach(x => x.setTransform(DPR, 0, 0, DPR, 0, 0));
@@ -292,7 +292,7 @@ function updateTimeUI() {
   const slider = $('time'); slider.value = Math.floor(simHour); slider.setAttribute('aria-valuetext', dateStr(simHour, false));
 }
 function setPlaying(on) {
-  playing = on; $('playBtn').textContent = on ? '❚❚ Pause' : '▶ Play'; $('startBtn').textContent = on ? '❚❚ Pause' : content.startButton;
+  playing = on; $('playBtn').textContent = on ? 'Pause' : 'Play'; if (on) $('startOverlay').hidden = true;
   if (on) { music.start(); if (simHour >= HOURS - 1) simHour = 0; } else music.stop();
   say(on ? `Playing from ${dateStr(simHour, false)}.` : `Paused at ${dateStr(simHour, false)}.`);
 }

@@ -12,84 +12,82 @@
 <body>
 <header id="ej-shell"></header>
 
-<main id="main" class="wrap">
-  <div class="eyebrow" id="kicker"></div>
-  <h1 id="title"></h1>
-  <p class="lede" id="lede"></p>
+<main id="main" class="room">
+  <div class="sr-only"><p id="kicker"></p><p id="title"></p><p id="lede"></p></div>
 
-  <div class="layout">
-    <section class="left">
-      <div class="panel mapcard">
-        <div class="status">
-          <span class="badge mono" id="frameBadge">Frame 01 / 10</span>
-          <span class="mono when" id="forecastTimeLabel">—</span>
-          <button id="pinBtn" aria-pressed="false" aria-keyshortcuts="Enter">🔓 Probe follows the pointer</button>
-        </div>
-        <div id="canvasContainer" class="canvasbox">
-          <canvas id="gifCanvas" width="721" height="541" tabindex="0" role="img" aria-describedby="keysHelp"></canvas>
-          <div id="reticle" class="reticle" hidden><i></i></div>
-          <div id="tooltip" class="tooltip" hidden>
-            <div class="tt-mood"><span id="ttDot" class="dot"></span><span id="ttMood"></span></div>
-            <div class="mono" id="ttCoords"></div>
-            <div class="mono tt-no2" id="ttDensity"></div>
-          </div>
-          <div id="startBanner" class="startbanner">
-            <div><p class="t" id="startTitle"></p><p id="startText"></p></div>
-            <button class="primary" id="startBtn"></button>
-          </div>
-        </div>
+  <figure class="piece" style="--ar:1.333">
+    <div id="canvasContainer" class="canvasbox">
+      <canvas id="gifCanvas" width="721" height="541" tabindex="0" role="img" aria-describedby="keysHelp"></canvas>
+      <div id="reticle" class="reticle" hidden><i></i></div>
+      <div id="tooltip" class="tooltip" hidden>
+        <div class="tt-mood"><span id="ttDot" class="dot"></span><span id="ttMood"></span></div>
+        <div class="mono" id="ttCoords"></div>
+        <div class="mono tt-no2" id="ttDensity"></div>
+      </div>
+      <div id="startBanner" class="startover">
+        <p class="sr-only" id="startTitle"></p>
+        <button class="big" id="startBtn"></button>
+        <p id="startText"></p>
+      </div>
+    </div>
+  </figure>
 
-        <div class="timeline">
-          <div class="tl-row">
-            <div class="group">
-              <button id="prevFrameBtn" aria-label="Previous frame" aria-keyshortcuts=",">‹</button>
-              <button id="playPauseBtn" aria-pressed="true">❚❚ Pause frames</button>
-              <button id="nextFrameBtn" aria-label="Next frame" aria-keyshortcuts=".">›</button>
-            </div>
-            <div class="scrub"><span class="mono" id="firstHour">024h</span><input id="frameScrubber" type="range" min="0" max="9" step="1" value="0" aria-label="Forecast frame"><span class="mono" id="lastHour">051h</span></div>
-            <label class="mini">Speed <input id="fpsSlider" type="range" min="1" max="10" step="0.5" value="3"><output class="mono" id="fpsVal">3.0 fps</output></label>
-            <label class="mini">Probe <input id="radiusSlider" type="range" min="6" max="36" step="2" value="16"><output class="mono" id="radiusVal">16px</output></label>
-            <label class="mini">Volume <input id="volumeSlider" type="range" min="0" max="100" value="75"><output class="mono" id="volumeVal">75%</output></label>
-          </div>
-          <div class="presets" role="group" aria-label="Audition region presets"><span class="label">Audition:</span></div>
+  <div class="plinth">
+    <div id="ej-label"></div>
+    <div class="transport" role="group" aria-label="Forecast frames">
+      <button id="prevFrameBtn" aria-label="Previous frame" aria-keyshortcuts=",">‹</button>
+      <button id="playPauseBtn" class="primary" aria-pressed="true">Pause</button>
+      <button id="nextFrameBtn" aria-label="Next frame" aria-keyshortcuts=".">›</button>
+      <div class="scrub"><span class="mono" id="firstHour">024h</span><input id="frameScrubber" type="range" min="0" max="9" step="1" value="0" aria-label="Forecast frame"><span class="mono" id="lastHour">051h</span></div>
+      <button id="pinBtn" aria-pressed="false" aria-keyshortcuts="Enter">Probe follows pointer</button>
+    </div>
+  </div>
+
+  <aside id="ej-drawer" aria-label="Controls and readings">
+    <div class="panel">
+      <div class="head"><h2>Now playing</h2><span id="moodBadge" class="moodbadge"></span></div>
+      <div class="status"><span class="mono" id="frameBadge">Frame 01 / 10</span><span class="mono when" id="forecastTimeLabel">—</span></div>
+      <div class="swatchrow">
+        <div id="colorSwatch" class="swatch"></div>
+        <div class="grow">
+          <div class="kv"><span class="mute">Region brightness</span><span id="brightnessPct" class="mono"></span></div>
+          <div class="bar"><i id="brightnessBar"></i></div>
+          <div class="kv mono small mute"><span id="rgbReadout"></span><span id="coordReadout"></span></div>
         </div>
       </div>
-      <div class="moods" id="moodCards"></div>
+      <div class="gauge">
+        <div class="kv"><span class="mute">Est. NO₂ column</span><span id="no2ValueReadout" class="mono"></span></div>
+        <div class="colorbar"><i id="no2Marker"></i></div>
+        <div class="kv mono tiny mute"><span>0</span><span>9</span><span>18 × 10¹⁵</span></div>
+      </div>
+      <dl class="params">
+        <dt>Scale</dt><dd id="scaleReadout"></dd>
+        <dt>Tempo</dt><dd id="tempoReadout"></dd>
+        <dt>Note</dt><dd id="noteReadout"></dd>
+        <dt>Timbre</dt><dd id="timbreReadout"></dd>
+      </dl>
+      <div class="viz"><div class="kv small mute"><span>Waveform</span><span id="synthStateLabel" class="mono">Standby</span></div><canvas id="audioVizCanvas" width="340" height="70" aria-hidden="true"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>This spot across all 10 frames</h2>
+      <canvas id="temporalChartCanvas" width="340" height="95" aria-hidden="true"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Places</h2>
+      <div class="presets" role="group" aria-label="Audition region presets"></div>
+    </div>
+    <div class="panel sliders">
+      <h2>Sound</h2>
+      <label class="mini">Speed <input id="fpsSlider" type="range" min="1" max="10" step="0.5" value="3"><output class="mono" id="fpsVal">3.0 fps</output></label>
+      <label class="mini">Probe <input id="radiusSlider" type="range" min="6" max="36" step="2" value="16"><output class="mono" id="radiusVal">16px</output></label>
+      <label class="mini">Volume <input id="volumeSlider" type="range" min="0" max="100" value="75"><output class="mono" id="volumeVal">75%</output></label>
+    </div>
+    <div class="panel">
+      <details><summary>The three moods</summary><div class="moods" id="moodCards"></div></details>
       <p class="about" id="about"></p>
       <p class="keys" id="keysHelp"></p>
-    </section>
-
-    <aside class="right">
-      <div class="panel">
-        <div class="head"><div><h2>Live sonification</h2><p class="mute small">Colour of the map → music</p></div><span id="moodBadge" class="moodbadge"></span></div>
-        <div class="swatchrow">
-          <div id="colorSwatch" class="swatch"></div>
-          <div class="grow">
-            <div class="kv"><span class="mute">Region brightness</span><span id="brightnessPct" class="mono"></span></div>
-            <div class="bar"><i id="brightnessBar"></i></div>
-            <div class="kv mono small mute"><span id="rgbReadout"></span><span id="coordReadout"></span></div>
-          </div>
-        </div>
-        <div class="gauge">
-          <div class="kv"><span class="mute">Est. NO₂ column</span><span id="no2ValueReadout" class="mono strong"></span></div>
-          <div class="colorbar"><i id="no2Marker"></i></div>
-          <div class="kv mono tiny mute"><span>0 (clean)</span><span>9</span><span>18 (thick plume)</span></div>
-        </div>
-        <div class="params">
-          <div><span>Scale / mode</span><b id="scaleReadout"></b></div>
-          <div><span>Tempo</span><b id="tempoReadout"></b></div>
-          <div><span>Note / chord</span><b id="noteReadout"></b></div>
-          <div><span>Timbre / filter</span><b id="timbreReadout"></b></div>
-        </div>
-        <div class="viz"><div class="kv small mute"><span>Waveform & spectrum</span><span id="synthStateLabel" class="mono">Standby</span></div><canvas id="audioVizCanvas" width="340" height="84" aria-hidden="true"></canvas></div>
-      </div>
-      <div class="panel">
-        <h3>This spot across all 10 frames</h3>
-        <p class="mute small">How darkness and mood shift over 27 hours here</p>
-        <canvas id="temporalChartCanvas" width="340" height="95" aria-hidden="true"></canvas>
-      </div>
-    </aside>
-  </div>
+    </div>
+  </aside>
 
   <section id="ej-next" aria-label="Continue the journey"></section>
   <footer class="ej-foot" id="foot"></footer>
