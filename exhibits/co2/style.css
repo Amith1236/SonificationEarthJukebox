@@ -24,7 +24,7 @@
 .timeline .date { font-family: var(--mono); font-size: .86rem; min-width: 10ch; line-height: 1.2; }
 .timeline .date small { display: block; color: var(--faint); font-size: .72rem; }
 
-.place { font-family: var(--serif); font-size: 1.6rem; line-height: 1.15; }
+.place { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; font-size: 1.6rem; line-height: 1.15; }
 .place small { display: block; font-family: var(--font); font-size: .78rem; color: var(--mute); margin-top: 2px; }
 dl.stats { margin-top: 12px; }
 .ppmbar { height: 2px; background: var(--line); overflow: hidden; margin-top: 5px; }

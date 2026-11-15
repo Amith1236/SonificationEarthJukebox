@@ -134,7 +134,7 @@ function buildList() {
   const box = $('listItems'); box.textContent = '';
   CHAPTERS.forEach((ch, i) => {
     const a = el('a', { class: 'btn primary', href: ch.path, 'aria-label': `Enter ${ch.title}` }, 'Enter');
-    box.append(el('li', {},
+    box.append(el('li', { style: `--c:${ch.color}` },
       el('h3', {}, el('span', { class: 'mono' }, String(i + 1).padStart(2, '0')), ch.title, seen.has(ch.id) ? el('span', { class: 'mono' }, 'heard') : null),
       el('p', {}, `${ch.subtitle}. ${ch.summary}`),
       el('div', { class: 'row' }, a, el('button', { onclick: () => { turnTo(i); toggleList(false); } }, 'Turn to it'))));
