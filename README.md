@@ -6,7 +6,7 @@ An accessible, interactive story of Earth's air told through sound, built from N
 |---|---------|------|------|
 | 1 | **Aerosols** | NASA GEOS aerosols, 19 Aug 2025 | A journey through pollution hotspots, played by a sombre orchestra |
 | 2 | **Carbon Currents** | DYAMOND-style CO₂ simulation, Jan–Mar 2020 | Active, restless: fast glowing currents, a piano that races as CO₂ rises |
-| 3 | **The Waning Canopy** | GEDI lidar canopy height (RH100) along ISS passes | Abstract requiem: footprints ring as bells, then burn to ash |
+| 3 | **The Waning Canopy** | GEDI L2B lidar, one ISS orbit (Congo → Central Asia) | Health in clear harmony, dieback in detuned dissonance, over satellite imagery |
 | 4 | **Nitrogen Dioxide** | NASA GEOS-CF NO₂ forecast, 10 frames | Mood still open: clean air bright, plumes slow and heavy |
 
 ## Run it
@@ -63,6 +63,6 @@ public/textures/            Earth and Moon textures for the hub
 ## Data notes
 
 - CO₂ is a **simulation** modelled on NASA SVS #5196 (DYAMOND); replace `exhibits/co2/sim.js` with real gridded data.
-- GEDI data is a **sample** file; replace `public/data/canopy/gedi_canopy_data.json` with the output of `process_gedi_rh100.py`.
+- GEDI: one real L2B granule (orbit 36105), `public/data/canopy/gedi_l2b_dieback.json`. Swap in another track with the same fields (lat_bin, lon_bin, rh100_m, pred_rh100_m, elev_m, canopy_cover, dieback_index, height_deficit_m, co2e_loss_t_ha). The satellite basemap is Esri World Imagery via Leaflet.
 - Earth textures: NASA Blue Marble / Black Marble (4K) via the three.js examples.
 - Hub thumbnails in `public/thumbs/` are screenshots of each piece; recapture them when a piece changes.

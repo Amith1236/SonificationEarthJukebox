@@ -1,36 +1,50 @@
 // =============================================================================
-// THE WANING CANOPY · data → music rules. Tune the requiem here.
+// THE WANING CANOPY · data → colour and music rules. Tune the piece here.
 // =============================================================================
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export const RULES = {
-  maxHeight: 50,          // m: canopy at or above this plays the top bell
-  lossThreshold: 15,      // m: below this the forest counts as thinned/lost → toll instead of bell
-  dropThreshold: 8,       // m: a fall this big between neighbours → a sigh
-  giantThreshold: 40,     // m: announced as a giant
-  stepSeconds: 0.5,       // time between footprints while the station sweeps (funereal pace)
-  passGapSeconds: 3.5,    // silence between passes
-  root: 33,               // MIDI A1: drone root
-  scale: [0, 1, 3, 5, 7, 8, 10],   // Phrygian: dark, grieving
-  bellLow: 57, bellHigh: 88,       // MIDI range for bells (A3 → E6)
+  severe: 0.65,          // dieback index at or above this → "severe dieback"
+  stress: 0.40,          // … at or above this → "canopy thinning"
+  diebackCount: 0.55,    // threshold for the "degraded" percentage in the drawer
+  stepMs: 120,           // playback: one footprint every stepMs
+  panEvery: 15,          // playback: re-centre the map every N footprints
+  speakEverySec: 14,     // playback: the narrator comments at most this often
+  maxHeight: 45,         // m: top of the height colour scale and pitch range
 };
 
-/** canopy height → bell MIDI note, snapped to the scale */
-export function bellNote(h) {
-  const t = clamp(h / RULES.maxHeight, 0, 1), target = RULES.bellLow + t * (RULES.bellHigh - RULES.bellLow);
-  let best = RULES.bellLow, bd = 99;
-  for (let m = RULES.bellLow - 12; m <= RULES.bellHigh + 12; m++) {
-    if (!RULES.scale.includes(((m - RULES.root) % 12 + 12) % 12)) continue;
-    const d = Math.abs(m - target); if (d < bd) { bd = d; best = m; }
-  }
-  return best;
+// the musical scale for the canopy voice (Hz): C major pentatonic-ish, low to high
+export const SCALE = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+
+/** footprint → the four voices (frequencies in Hz, gains 0..1) */
+export function voicesFor(c) {
+  const stress = c.dieback_index ?? 0;
+  const hIdx = Math.min(SCALE.length - 1, Math.max(0, Math.floor((c.rh100_m / RULES.maxHeight) * SCALE.length)));
+  const pad = SCALE[hIdx];
+  return {
+    stress,
+    sub: { freq: 55 + Math.min(65, Math.max(0, (c.elev_m || 0) / 15)), gain: 0.24 },   // terrain drone
+    pad: { freq: pad, gain: 0.22 },                                                   // canopy height
+    shimmer: { freq: pad * 2, gain: Math.max(0.02, (1 - stress) * 0.16) },              // health
+    pulse: { freq: pad * (stress > 0.5 ? 1.189 : 1.5), detune: stress * 14, gain: stress * 0.12 }, // dieback: minor third vs fifth
+  };
 }
 
-/** colour of a living footprint (bark brown → deep green → pale, luminous green for giants) */
-export function heightColor(h) {
-  const t = clamp(h / 55, 0, 1);
-  if (t < 0.35) return [92 - t * 180, 64 + t * 85, 51 - t * 50];
-  if (t < 0.75) return [27 + (t - 0.35) * 100, 94 + (t - 0.35) * 300, 32 + (t - 0.35) * 285];
-  return [67 + (t - 0.75) * 750, 214 + (t - 0.75) * 160, 146 + (t - 0.75) * 430].map(v => Math.min(255, v));
-}
-export const ASH = [96, 92, 88];
+export const statusOf = c => ((c.dieback_index ?? 0) >= RULES.severe ? 'severe' : (c.dieback_index ?? 0) >= RULES.stress ? 'stress' : 'intact');
+
+// ---------- colour ----------
+const ramp = (stops, t) => {
+  t = Math.min(1, Math.max(0, t));
+  const i = Math.min(stops.length - 2, Math.floor(t * (stops.length - 1))), f = t * (stops.length - 1) - i;
+  const a = stops[i], b = stops[i + 1];
+  return `rgb(${Math.round(a[0] + f * (b[0] - a[0]))},${Math.round(a[1] + f * (b[1] - a[1]))},${Math.round(a[2] + f * (b[2] - a[2]))})`;
+};
+const HEALTH = [[16, 185, 129], [250, 204, 21], [249, 115, 22], [239, 68, 68]];   // intact → dieback
+const GROWTH = [[239, 68, 68], [245, 158, 11], [16, 185, 129], [6, 182, 212]];    // low → high
+
+/** what the map can colour by. `css` is the legend gradient. */
+export const METRICS = {
+  dieback_index: { label: 'Canopy health', css: 'linear-gradient(90deg,#10b981,#facc15,#f97316,#ef4444)', ticks: ['Intact', 'Thinning', 'Dieback'], color: v => ramp(HEALTH, v) },
+  rh100_m: { label: 'Canopy height', css: 'linear-gradient(90deg,#ef4444,#f59e0b,#10b981,#06b6d4)', ticks: ['0 m', '22 m', '45+ m'], color: v => ramp(GROWTH, v / RULES.maxHeight) },
+  canopy_cover: { label: 'Canopy cover', css: 'linear-gradient(90deg,#ef4444,#f59e0b,#10b981,#06b6d4)', ticks: ['0%', '50%', '100%'], color: v => ramp(GROWTH, v) },
+  co2e_loss_t_ha: { label: 'Carbon deficit', css: 'linear-gradient(90deg,#10b981,#facc15,#f97316,#ef4444)', ticks: ['0', '', 'high tCO₂e/ha'], color: v => ramp(HEALTH, v / 20) },
+};

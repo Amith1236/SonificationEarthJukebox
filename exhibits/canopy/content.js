@@ -5,35 +5,46 @@
 
 export const content = {
   title: 'The Waning Canopy',
-  kicker: 'NASA GEDI lidar on the International Space Station · canopy height (RH100)',
-  lede: 'GEDI is a laser on the International Space Station. On every pass it fires down through the forest and times the echo, measuring how tall the canopy stands, footprint by footprint. Follow the station’s paths over the Amazon. Where the giants still stand, bells ring high. Where the forest has fallen, the music sinks into a low, grieving drone.',
-  startButton: 'Follow the station',
+  kicker: 'NASA GEDI L2B lidar on the International Space Station · one orbital track',
+  lede: 'GEDI is a laser on the International Space Station. On one orbit it fired down through the Congo rainforest, across the savanna and the Sahel, then over the steppes of Central Asia, timing each echo to measure how tall the canopy stands. A model predicts how tall each footprint should be; the gap between the two is the dieback. Healthy forest plays in clear harmony. Where the canopy is dying, the harmony turns dissonant.',
+  startButton: 'Follow the laser',
   startHint: 'Sound on · headphones recommended',
 
-  intro: 'Four hundred kilometres above the Amazon, | the space station crosses the forest. || Its laser touches each tree | and listens for the echo. || Tall canopy rings out, | high and clear. || But listen closely… | for the places where the bells | fall *silent*.',
-  passIntro: (p, n, from, to) => `Pass ${p} of ${n}. || The station crosses from ${from} | to ${to}.`,
-  passSummary: (p, s) => `Along pass ${p}, | the tallest canopy reached ${s.max} metres. | ${s.lost} of ${s.count} footprints found the forest thinned below ${s.lossThreshold} metres.`,
-  outro: 'The station moves on. || Behind it, | every footprint we heard has burned down to ash on the map: | a memory of the canopy, | measured once from orbit. || Forests like these hold the carbon of centuries. | When they fall, | it returns to the air we heard in the chapters before.',
-  dropLine: (h0, h1) => `The canopy falls from ${h0} to ${h1} metres.`,
-  tallLine: h => `A giant: ${h} metres tall.`,
+  intro: 'Four hundred kilometres up, | a laser on the space station reaches down through the forest, | and listens for the echo. || Where the canopy stands tall and whole, | the harmony is clear. || Where it thins, | and dies… | listen to it *sour*.',
+  outro: 'The track ends. || Every footprint the laser touched | is a small measure of a living forest, | or of what is left of one.',
 
-  sampleNote: 'Sample data: illustrative footprints along three ISS passes, not real GEDI measurements. Replace public/data/canopy/gedi_canopy_data.json with the output of process_gedi_rh100.py.',
-  about: '<strong>About the data:</strong> GEDI (Global Ecosystem Dynamics Investigation) measures RH100, the height of the tallest surface the laser reaches in each 25 m footprint. Footprints are binned along the ISS ground track. The ML predicted height comes from a spatial model trained on neighbouring footprints; RMSE and R² show how well it matches.',
-  howItSounds: [
-    '<b>Canopy height (RH100)</b> → bell pitch: the taller the trees, the higher the bell, in a dark minor mode.',
-    '<b>Canopy cover</b> → how long the bell rings and how bright it is.',
-    '<b>Biomass</b> → the weight of the low bass under each bell.',
-    '<b>Thinned forest</b> (below the loss threshold) → a low toll with a dissonant cluster instead of a bell.',
-    '<b>A sudden drop</b> between neighbouring footprints → a falling sigh.',
-    '<b>The drone</b> follows the average canopy so far: it darkens and thins as the forest does.',
+  // spoken while playing, at most every few seconds (see RULES.speakEverySec)
+  severeLine: (c, where) => `Severe dieback, ${where}. | The canopy reaches ${c.rh100_m.toFixed(0)} metres, | where ${c.pred_rh100_m.toFixed(0)} were expected.`,
+  intactLine: (c, where) => `Intact canopy, ${where}. | ${c.rh100_m.toFixed(0)} metres tall, | ${Math.round(c.canopy_cover * 100)} percent cover.`,
+  enterRegion: where => `Now crossing ${where}.`,
+  status: { intact: 'Intact canopy', stress: 'Canopy thinning', severe: 'Severe dieback' },
+
+  // rough place names along this track, for narration: [latMin, latMax, lonMin, lonMax, name]
+  regions: [
+    [-5, 3, 10, 20, 'the Congo Basin rainforest'],
+    [3, 6, 15, 22, 'the northern Congo forest'],
+    [6, 9.5, 15, 25, 'the Central African savanna'],
+    [9.5, 16, 18, 30, 'the Sahel, in Sudan'],
+    [38, 50.2, 50, 81, 'the Kazakh steppe'],
+    [50, 53, 80, 91, 'the Altai foothills'],
+    [48, 56, 91, 105, 'southern Siberia'],
   ],
-  footer: 'Data: NASA GEDI L2A/L2B (sample). Country outlines: Natural Earth. Sound is synthesised live in your browser.',
+  elsewhere: 'open country along the track',
+
+  about: '<strong>About the data:</strong> one GEDI L2B granule (GEDI02_B, orbit 36105). RH100 is the height of the tallest surface the laser reaches in each footprint, binned along the ISS ground track. A spatial model predicts the expected height for each footprint (RMSE 3.8 m, R² 0.84); the dieback index combines the shortfall with canopy cover. Note that naturally treeless steppe also scores high: the index reads low, sparse canopy as stress.',
+  howItSounds: [
+    '<b>Terrain elevation</b> → a sub-bass drone.',
+    '<b>Canopy height (RH100)</b> → the pitch of the main voice: taller forest, higher note.',
+    '<b>Canopy health</b> → a bright octave shimmer that fades as dieback rises.',
+    '<b>Dieback</b> → a detuned, dissonant pulse a minor third above, growing louder with stress.',
+  ],
+  footer: 'Data: NASA GEDI L2B (LP DAAC). Imagery: Esri World Imagery. Sound is synthesised live in your browser.',
 };
 
 export const transcript = () => [
   { heading: 'Introduction', text: content.lede },
   { heading: 'Narration', text: content.intro },
   { heading: 'Ending', text: content.outro },
-  { heading: 'About the data', text: content.about.replace(/<[^>]+>/g, '') + ' ' + content.sampleNote },
+  { heading: 'About the data', text: content.about.replace(/<[^>]+>/g, '') },
   { heading: 'How it sounds', text: content.howItSounds.map(h => h.replace(/<[^>]+>/g, '')).join(' ') },
 ];

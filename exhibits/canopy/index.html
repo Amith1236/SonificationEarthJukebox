@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Waning Canopy · Earth Information Jukebox</title>
-<meta name="description" content="A requiem for the forest, read by the GEDI laser on the International Space Station.">
+<meta name="description" content="Hear forest dieback along one orbit of the GEDI laser on the International Space Station.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/src/shared/theme.css">
 <link rel="stylesheet" href="./style.css">
@@ -17,66 +17,79 @@
 
   <figure class="piece wide">
     <div class="mapbox">
-      <canvas id="map" tabindex="0" role="img" aria-describedby="maphelp"></canvas>
+      <div id="map" role="application" aria-roledescription="satellite map" aria-label="Satellite map of the GEDI orbital track" aria-describedby="keysHelp"></div>
       <div class="legend" aria-hidden="true">
-        <div class="bar"></div>
-        <div class="ticks"><span>0</span><span>25</span><span>50 m</span></div>
+        <div id="legTitle">Canopy health</div>
+        <div class="bar" id="legBar"></div>
+        <div class="ticks" id="legTicks"></div>
       </div>
-      <p class="subtitle" id="cap" aria-live="off"></p>
+      <p class="subtitle" id="cap"></p>
       <div id="startOverlay" class="startover"><button class="big" id="startBtn"></button><p id="startHint"></p></div>
+    </div>
+    <div class="profile">
+      <canvas id="profile" aria-hidden="true"></canvas>
+      <label class="sr-only" for="scrubber">Footprint along the track</label>
+      <input type="range" id="scrubber" min="0" max="0" value="0" aria-keyshortcuts="ArrowLeft ArrowRight">
     </div>
   </figure>
 
   <div class="plinth">
     <div id="ej-label"></div>
-    <div class="transport" role="group" aria-label="Station controls">
-      <button id="prevPass" aria-label="Previous pass" aria-keyshortcuts="PageUp">⇤</button>
-      <button id="prevFp" aria-label="Previous footprint" aria-keyshortcuts="ArrowLeft">‹</button>
-      <button id="playBtn" class="primary" aria-keyshortcuts="Space">Play</button>
-      <button id="nextFp" aria-label="Next footprint" aria-keyshortcuts="ArrowRight">›</button>
-      <button id="nextPass" aria-label="Next pass" aria-keyshortcuts="PageDown">⇥</button>
+    <div class="transport" role="group" aria-label="Playback">
+      <button id="prevBtn" aria-label="Previous footprint">‹</button>
+      <button id="playBtn" class="primary" aria-pressed="false" aria-keyshortcuts="Space">Play</button>
+      <button id="nextBtn" aria-label="Next footprint">›</button>
+      <button id="intactBtn" class="tag intact" aria-keyshortcuts="I">Intact canopy</button>
+      <button id="severeBtn" class="tag severe" aria-keyshortcuts="S">Severe dieback</button>
       <button id="describeBtn" aria-keyshortcuts="D">Describe</button>
     </div>
   </div>
 
   <aside id="ej-drawer" aria-label="Controls and readings">
     <div class="panel">
+      <h2>Along this track</h2>
+      <dl>
+        <dt>Degraded / dieback</dt><dd id="stDiebackPct" class="severe">—</dd>
+        <dt>Stressed footprints</dt><dd id="stDiebackCnt">—</dd>
+        <dt>Intact canopy</dt><dd id="stIntactPct" class="intact">—</dd>
+        <dt>Mean carbon deficit</dt><dd id="stCo2">—</dd>
+        <dt>Model</dt><dd id="stModel">—</dd>
+      </dl>
+    </div>
+    <div class="panel">
       <h2>Footprint</h2>
       <dl>
-        <dt>Pass</dt><dd id="cPass">—</dd>
-        <dt>Coordinates</dt><dd id="cCoords">—</dd>
-        <dt>Canopy height</dt><dd id="cRh100">—</dd>
-        <dt>ML predicted</dt><dd id="cPred">—</dd>
-        <dt>Canopy cover</dt><dd id="cCover">—</dd>
-        <dt>Biomass</dt><dd id="cAgb">—</dd>
+        <dt>Status</dt><dd id="selStatus">—</dd>
+        <dt>Position</dt><dd id="selPos">—</dd>
+        <dt>Coordinates</dt><dd id="selCoord">—</dd>
+        <dt>Observed RH100</dt><dd id="selRh">—</dd>
+        <dt>Expected</dt><dd id="selPred">—</dd>
+        <dt>Height anomaly</dt><dd id="selDef">—</dd>
+        <dt>Canopy cover</dt><dd id="selCover">—</dd>
       </dl>
     </div>
     <div class="panel">
-      <h2>The forest so far</h2>
+      <h2>Voices</h2>
       <dl>
-        <dt>Heard</dt><dd id="fHeard">0</dd>
-        <dt>Mean height</dt><dd id="fMean">—</dd>
-        <dt>Thinned</dt><dd id="fLost">—</dd>
-      </dl>
-      <div class="life" aria-hidden="true"><i id="lifeBar"></i></div>
-    </div>
-    <div class="panel">
-      <h2>Spatial ML validation</h2>
-      <dl>
-        <dt>Footprints</dt><dd id="mShots">Loading…</dd>
-        <dt>Spatial RMSE</dt><dd id="mRmse">—</dd>
-        <dt>Spatial R²</dt><dd id="mR2">—</dd>
+        <dt>Sub-bass drone</dt><dd id="v1">terrain → Hz</dd>
+        <dt>Canopy voice</dt><dd id="v2">height → pitch</dd>
+        <dt>Shimmer</dt><dd id="v3">health → brightness</dd>
+        <dt>Dissonance</dt><dd id="v4">dieback → detune</dd>
       </dl>
     </div>
     <div class="panel">
-      <h2>Sound</h2>
-      <div class="row"><label class="vol">Volume <input id="vol" type="range" min="0" max="100" value="80"></label><button id="resetBtn">Restore the forest</button></div>
+      <h2>Map</h2>
+      <div class="ctrl"><label for="metricSel">Colour by</label><select id="metricSel"></select></div>
+      <div class="row">
+        <button id="corridorBtn" aria-pressed="true">Regional corridor</button>
+        <button id="fitBtn">Fit the track</button>
+      </div>
+      <div class="ctrl"><label for="vol">Volume</label><input id="vol" type="range" min="0" max="100" value="80"></div>
     </div>
     <div class="panel">
-      <p class="note" id="sampleNote" hidden></p>
-      <p id="maphelp" class="maphelp">Hover or click the footprints, or focus the map: <kbd>←</kbd><kbd>→</kbd> step along the path, <kbd>PgUp</kbd><kbd>PgDn</kbd> change pass, <kbd>Space</kbd> fly, <kbd>D</kbd> describe.</p>
       <details class="how"><summary>How the sound is made</summary><ul id="howList"></ul></details>
       <p id="about" class="about"></p>
+      <p class="keys" id="keysHelp">With the map focused: <kbd>←</kbd><kbd>→</kbd> step along the track (<kbd>Shift</kbd> ×10), <kbd>Space</kbd> play, <kbd>I</kbd> intact canopy, <kbd>S</kbd> severe dieback, <kbd>D</kbd> describe, <kbd>T</kbd> transcript, <kbd>Esc</kbd> orbit.</p>
     </div>
   </aside>
 

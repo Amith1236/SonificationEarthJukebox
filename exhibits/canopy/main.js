@@ -1,250 +1,193 @@
 // =============================================================================
-// THE WANING CANOPY · engine. The ISS sweeps along its ground tracks; each GEDI
-// footprint rings, flares, then burns down to ash.
-// Words: content.js · rules: mapping.js · sounds: instruments.js
+// THE WANING CANOPY · engine. One orbit of the GEDI laser over satellite
+// imagery: each footprint is coloured by canopy health and played by four
+// voices (instruments.js) following the rules in mapping.js. Words: content.js.
 // =============================================================================
-import { geoEquirectangular, geoPath, geoGraticule } from 'd3-geo';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { mountShell } from '../../src/shared/shell.js';
 import { prefs } from '../../src/shared/prefs.js';
-import { loadCountries } from '../../src/shared/world.js';
 import { content, transcript } from './content.js';
-import { RULES, bellNote, heightColor, ASH } from './mapping.js';
-import { createRequiem } from './instruments.js';
+import { RULES, METRICS, voicesFor, statusOf } from './mapping.js';
+import { createVoices } from './instruments.js';
 
 const shell = mountShell({ id: 'canopy', transcript });
 const $ = id => document.getElementById(id);
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const fmtLL = (lat, lon) => `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}`;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const plain = t => t.replace(/\s*\|\|?\s*/g, ' ').replace(/[*…]/g, '').replace(/\s+/g, ' ').trim();
 
+// ---------- static text ----------
 $('kicker').textContent = content.kicker; $('title').textContent = content.title; $('lede').textContent = content.lede;
 $('startBtn').textContent = content.startButton; $('startHint').textContent = content.startHint;
 $('about').innerHTML = content.about; $('foot').textContent = content.footer;
 $('howList').innerHTML = content.howItSounds.map(h => `<li>${h}</li>`).join('');
+$('metricSel').innerHTML = Object.entries(METRICS).map(([k, m]) => `<option value="${k}">${m.label}</option>`).join('');
 
 // ---------- data ----------
-const [data, countries] = await Promise.all([fetch('/data/canopy/gedi_canopy_data.json').then(r => r.json()), loadCountries()]);
-const cells = data.cells.map((c, i) => ({ ...c, i, burn: 0, burnT: -1, heard: false }));
-if (data.sample) { $('sampleNote').hidden = false; $('sampleNote').textContent = content.sampleNote; }
-$('mShots').textContent = data.metrics.total_footprints.toLocaleString(); $('mRmse').textContent = `${data.metrics.rmse_m} m`; $('mR2').textContent = data.metrics.r2;
-// split into ISS passes: a new pass starts whenever latitude stops increasing (ascending tracks)
-const passes = [];
-cells.forEach((c, i) => { if (!i || c.lat_bin < cells[i - 1].lat_bin) passes.push([]); c.pass = passes.length - 1; passes[passes.length - 1].push(c); });
-const bbox = cells.reduce((b, c) => [Math.min(b[0], c.lon_bin), Math.min(b[1], c.lat_bin), Math.max(b[2], c.lon_bin), Math.max(b[3], c.lat_bin)], [180, 90, -180, -90]);
-const PAD = { lon: 6, lat: 5 };
-const frame = { type: 'MultiPoint', coordinates: [[bbox[0] - PAD.lon, bbox[1] - PAD.lat], [bbox[2] + PAD.lon, bbox[3] + PAD.lat]] };
-// straight-line fit of each pass (lon as a function of lat) to draw the full orbit track
-const trackFits = passes.map(p => {
-  const n = p.length, my = p.reduce((s, c) => s + c.lat_bin, 0) / n, mx = p.reduce((s, c) => s + c.lon_bin, 0) / n;
-  const b = p.reduce((s, c) => s + (c.lat_bin - my) * (c.lon_bin - mx), 0) / p.reduce((s, c) => s + (c.lat_bin - my) ** 2, 0);
-  return lat => mx + b * (lat - my);
-});
-const passSpacing = passes.length > 1 ? (trackFits[1](0) - trackFits[0](0)) : 5;
-const passInfo = passes.map((p, k) => ({
-  from: fmtLL(p[0].lat_bin, p[0].lon_bin), to: fmtLL(p[p.length - 1].lat_bin, p[p.length - 1].lon_bin),
-  max: Math.round(Math.max(...p.map(c => c.rh100_m))), count: p.length, lost: p.filter(c => c.rh100_m < RULES.lossThreshold).length, lossThreshold: RULES.lossThreshold, k,
-}));
+const data = await fetch('/data/canopy/gedi_l2b_dieback.json').then(r => r.json());
+const cells = data.cells || [];
+const N = cells.length;
+const where = c => (content.regions.find(([a, b, x, y]) => c.lat_bin >= a && c.lat_bin < b && c.lon_bin >= x && c.lon_bin < y) || [, , , , content.elsewhere])[4];
 
-// ---------- view ----------
-const cv = $('map'), g = cv.getContext('2d');
-const proj = geoEquirectangular(), path = geoPath(proj, g);
-let W = 0, H = 0, DPR = 1, HK = 3;
-const bg = document.createElement('canvas'), bgc = bg.getContext('2d');
-function resize() {
-  DPR = Math.min(2, devicePixelRatio || 1); W = cv.parentElement.clientWidth; H = Math.round(Math.max(300, Math.min(W * 0.62, innerHeight - 250)));
-  cv.width = bg.width = W * DPR; cv.height = bg.height = H * DPR; cv.style.height = H + 'px';
-  proj.fitExtent([[20, 20], [W - 20, H - 20]], frame);
-  HK = H / 300;                                   // pixels per metre of canopy
-  cells.forEach(c => { [c.x, c.y] = proj([c.lon_bin, c.lat_bin]); });
-  drawBackground();
-}
-function drawBackground() {
-  const x = bgc, hc = prefs.highContrast; x.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const gr = x.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, hc ? '#000' : '#020605'); gr.addColorStop(1, hc ? '#000' : '#050a08');
-  x.fillStyle = gr; x.fillRect(0, 0, W, H);
-  const p = geoPath(proj, x);
-  x.beginPath(); p(geoGraticule().step([5, 5])()); x.strokeStyle = hc ? 'rgba(255,255,255,.2)' : 'rgba(120,160,140,.07)'; x.lineWidth = 1; x.stroke();
-  x.beginPath(); p({ type: 'FeatureCollection', features: countries }); x.fillStyle = hc ? '#111' : 'rgba(30,48,38,.35)'; x.fill();
-  x.strokeStyle = hc ? 'rgba(255,255,255,.6)' : 'rgba(140,180,160,.18)'; x.lineWidth = 0.8; x.stroke();
-  // ghost orbits: neighbouring ISS tracks that GEDI also flies
-  x.setLineDash([2, 7]); x.lineWidth = 1;
-  for (let k = -4; k < passes.length + 4; k++) {
-    const fit = trackFits[clamp(k, 0, passes.length - 1)], off = (k - clamp(k, 0, passes.length - 1)) * passSpacing;
-    x.beginPath();
-    for (let lat = bbox[1] - PAD.lat - 2; lat <= bbox[3] + PAD.lat + 2; lat += 0.5) { const [px, py] = proj([fit(lat) + off, lat]); lat === bbox[1] - PAD.lat - 2 ? x.moveTo(px, py) : x.lineTo(px, py); }
-    x.strokeStyle = k >= 0 && k < passes.length ? (hc ? 'rgba(255,255,255,.5)' : 'rgba(200,220,255,.28)') : 'rgba(200,220,255,.08)'; x.stroke();
-  }
-  x.setLineDash([]);
-  x.font = '11px "JetBrains Mono", monospace'; x.fillStyle = 'rgba(200,220,255,.4)';
-  passes.forEach((p, k) => { const [px, py] = proj([trackFits[k](bbox[3] + 2.5), bbox[3] + 2.5]); x.fillText(`ISS PASS ${k + 1}`, px + 6, py); });
-}
+const degraded = cells.filter(c => (c.dieback_index ?? 0) >= RULES.diebackCount).length;
+const degradedPct = N ? degraded / N * 100 : 0;
+$('stDiebackPct').textContent = `${degradedPct.toFixed(1)}%`;
+$('stDiebackCnt').textContent = degraded.toLocaleString();
+$('stIntactPct').textContent = `${(100 - degradedPct).toFixed(1)}%`;
+$('stCo2').textContent = `${(cells.reduce((a, c) => a + (c.co2e_loss_t_ha || 0), 0) / (N || 1)).toFixed(1)} tCO₂e/ha`;
+$('stModel').textContent = `R² ${Number(data.metrics?.r2 ?? 0).toFixed(2)} · RMSE ${Number(data.metrics?.rmse_m ?? 0).toFixed(1)} m`;
+const maxH = cells.reduce((m, c) => Math.max(m, c.rh100_m || 0), 0);
 
-// ---------- state ----------
-const S = { idx: 0, playing: false, hover: -1, iss: null, started: false, lastPass: -1 };
-const embers = [], pulses = [];
-const heard = () => cells.filter(c => c.heard);
-function updateForestStats() {
-  const h = heard(), mean = h.length ? h.reduce((s, c) => s + c.rh100_m, 0) / h.length : 0, lost = h.filter(c => c.rh100_m < RULES.lossThreshold).length;
-  $('fHeard').textContent = `${h.length} of ${cells.length}`;
-  $('fMean').textContent = h.length ? `${mean.toFixed(1)} m` : '—';
-  $('fLost').textContent = h.length ? `${lost} footprints (${Math.round(lost / h.length * 100)}%)` : '—';
-  $('lifeBar').style.width = `${h.length ? clamp(mean / RULES.maxHeight, 0, 1) * 100 : 100}%`;
-  return { mean, lost, n: h.length };
+// ---------- map ----------
+const map = L.map('map', { preferCanvas: true, keyboard: false, zoomSnap: 0.25, zoomControl: false }).setView([20, 50], 3);
+L.control.zoom({ position: 'topright' }).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Imagery © Esri, Maxar, Earthstar Geographics', maxZoom: 18,
+}).addTo(map);
+$('map').tabIndex = 0;
+
+let metric = 'dieback_index', corridor = true;
+const layer = L.layerGroup().addTo(map);
+let ring = null;
+const valueOf = c => c[metric] ?? c.dieback_index ?? 0;
+function render() {
+  const m = METRICS[metric];
+  $('legTitle').textContent = m.label; $('legBar').style.background = m.css;
+  $('legTicks').innerHTML = m.ticks.map(t => `<span>${t}</span>`).join('');
+  layer.clearLayers();
+  if (corridor) for (let i = 0; i < N; i += 6) { const c = cells[i]; L.circle([c.lat_bin, c.lon_bin], { radius: 14000, stroke: false, fillColor: m.color(valueOf(c)), fillOpacity: 0.14, interactive: false }).addTo(layer); }
+  cells.forEach((c, i) => {
+    const col = m.color(valueOf(c)), severe = metric === 'dieback_index' && statusOf(c) === 'severe';
+    L.circleMarker([c.lat_bin, c.lon_bin], { radius: severe ? 5.5 : 4.2, color: col, fillColor: col, fillOpacity: 0.9, weight: severe ? 1 : 0 })
+      .on('click', () => { start(false); select(i, false, true); }).addTo(layer);
+  });
 }
-function showCell(i) {
-  const c = cells[i];
-  $('cPass').textContent = `${c.pass + 1} of ${passes.length}`;
-  $('cCoords').textContent = fmtLL(c.lat_bin, c.lon_bin);
-  $('cRh100').textContent = `${c.rh100_m.toFixed(1)} m (${c.shots} shots)${c.rh100_m < RULES.lossThreshold ? ' · thinned' : ''}`;
-  $('cPred').textContent = `${c.pred_rh100_m.toFixed(1)} m`;
-  $('cCover').textContent = `${Math.round(c.canopy_cover * 100)}%`;
-  $('cAgb').textContent = `${c.agb_mg_ha.toFixed(0)} Mg/ha`;
+const fit = () => map.fitBounds(cells.map(c => [c.lat_bin, c.lon_bin]), { padding: [30, 30] });
+
+// ---------- profile along the track ----------
+const pc = $('profile'), px = pc.getContext('2d');
+function drawProfile() {
+  const r = pc.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  if (pc.width !== Math.round(r.width * dpr)) { pc.width = Math.round(r.width * dpr); pc.height = Math.round(r.height * dpr); }
+  px.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = r.width, h = r.height, step = w / N;
+  px.clearRect(0, 0, w, h);
+  cells.forEach((c, i) => {
+    const bh = Math.min(h - 4, ((c.rh100_m || 0) / Math.max(RULES.maxHeight, maxH)) * (h - 6));
+    px.fillStyle = METRICS.dieback_index.color(c.dieback_index ?? 0);
+    px.fillRect(i * step, h - bh, Math.max(1.2, step), bh);
+  });
+  const sx = S.idx * step;
+  px.fillStyle = '#ffffff'; px.fillRect(sx - 1, 0, 2, h);
 }
-const cellSentence = c => `Pass ${c.pass + 1}, ${fmtLL(c.lat_bin, c.lon_bin)}. Canopy ${c.rh100_m.toFixed(0)} metres${c.rh100_m < RULES.lossThreshold ? ', thinned forest' : ''}, cover ${Math.round(c.canopy_cover * 100)} percent, biomass ${c.agb_mg_ha.toFixed(0)} megagrams per hectare.`;
-function caption(t) { $('cap').textContent = t.replace(/\s*\|\|?\s*/g, ' ').replace(/\*/g, ''); }
+pc.addEventListener('click', e => { const r = pc.getBoundingClientRect(); start(false); select(Math.floor((e.clientX - r.left) / r.width * N), true, true); });
 
 // ---------- sound ----------
-let audio = null;
-function initAudio() { if (!audio) { audio = createRequiem({ volume: $('vol').value / 100 }); audio.startDrone(RULES.root); } else if (audio.ac.state === 'suspended') audio.ac.resume(); }
-function sound(c, t) {
-  const pan = clamp((c.x / W) * 2 - 1, -0.8, 0.8), prev = cells[c.i - 1];
-  if (c.rh100_m < RULES.lossThreshold) audio.toll(RULES.root + 12, t, { vel: 0.8, pan });
-  else audio.bell(bellNote(c.rh100_m), t, { vel: 0.45 + 0.5 * c.canopy_cover, sustain: c.canopy_cover, bright: 0.4 + c.canopy_cover * 0.8, pan });
-  audio.sub(RULES.root + 12, t, clamp(c.agb_mg_ha / 340, 0, 1));
-  if (prev && prev.pass === c.pass && prev.rh100_m - c.rh100_m >= RULES.dropThreshold) audio.sigh(bellNote(prev.rh100_m), t + 0.05, { pan });
-  const st = updateForestStats();
-  audio.setDrone(1, st.n ? clamp(st.mean / RULES.maxHeight, 0, 1) : 1);
+let ac = null, voices = null;
+function initAudio() {
+  if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); voices = createVoices(ac); voices.setVolume($('vol').value / 100); }
+  if (ac.state === 'suspended') ac.resume();
 }
-function hear(i, { at, speak = false } = {}) {
-  const c = cells[i]; S.idx = i; showCell(i);
-  if (audio) sound(c, at ?? audio.ac.currentTime + 0.01);
-  c.heard = true; c.burnT = performance.now();
-  pulses.push({ x: c.x, y: c.y, t: performance.now() });
-  if (!prefs.reduceMotion) for (let k = 0; k < 4 + c.rh100_m / 8; k++) embers.push({ x: c.x + (Math.random() - 0.5) * 4, y: c.y - Math.random() * c.rh100_m * HK, vx: (Math.random() - 0.5) * 0.3, vy: -0.2 - Math.random() * 0.5, life: 1 });
-  const prev = cells[i - 1];
-  if (speak) shell.say(cellSentence(c), { speak: false });
-  if (S.playing && prev && prev.pass === c.pass && prev.rh100_m - c.rh100_m >= RULES.dropThreshold * 1.6) caption(content.dropLine(prev.rh100_m.toFixed(0), c.rh100_m.toFixed(0)));
-  else if (S.playing && c.rh100_m >= RULES.giantThreshold) caption(content.tallLine(c.rh100_m.toFixed(0)));
-  cv.setAttribute('aria-label', `GEDI canopy map. ${cellSentence(c)}`);
+function sound(c) {
+  if (!voices || !S.audible) return;
+  const v = voicesFor(c); voices.play(v);
+  $('v1').textContent = `${v.sub.freq.toFixed(0)} Hz`;
+  $('v2').textContent = `${v.pad.freq.toFixed(0)} Hz`;
+  $('v3').textContent = `${((1 - v.stress) * 100).toFixed(0)}% bright`;
+  $('v4').textContent = `${(v.stress * 100).toFixed(0)}% stress`;
 }
 
-// the station's flight: one footprint every RULES.stepSeconds, a pause between passes
-let flightTimer = null;
-function flyFrom(i) {
-  clearTimeout(flightTimer);
-  if (!S.playing) return;
-  if (i >= cells.length) return finish();
-  const c = cells[i];
-  if (c.pass !== S.lastPass) {
-    if (S.lastPass >= 0) shell.say(content.passSummary(S.lastPass + 1, passInfo[S.lastPass]), { queue: true });
-    S.lastPass = c.pass;
-    const line = content.passIntro(c.pass + 1, passes.length, passInfo[c.pass].from, passInfo[c.pass].to);
-    caption(line); shell.say(line, { queue: true });
-    S.iss = { from: c, to: c, t0: performance.now(), dur: 1 };
-    flightTimer = setTimeout(() => step(i), RULES.passGapSeconds * 1000);
-    return;
-  }
-  step(i);
+// ---------- selection ----------
+const S = { idx: 0, playing: false, audible: false, started: false, timer: null, lastSpeak: 0, lastWhere: '' };
+function caption(t) { $('cap').textContent = plain(t); }
+function say(t, o) { caption(t); shell.say(t, o); }
+function describe(c) {
+  const st = statusOf(c), def = c.height_deficit_m ?? 0;
+  return `${content.status[st]}, ${where(c)}. Footprint ${S.idx + 1} of ${N}. Canopy ${c.rh100_m.toFixed(1)} metres, expected ${(c.pred_rh100_m ?? c.rh100_m).toFixed(1)}, ${def >= 0 ? 'above' : 'below'} by ${Math.abs(def).toFixed(1)}. Cover ${Math.round((c.canopy_cover ?? 0) * 100)} percent. Dieback stress ${Math.round((c.dieback_index ?? 0) * 100)} percent.`;
 }
-function step(i) {
-  if (!S.playing) return;
-  const c = cells[i], nx = cells[i + 1];
-  hear(i);
-  S.iss = { from: c, to: nx && nx.pass === c.pass ? nx : c, t0: performance.now(), dur: RULES.stepSeconds * 1000 };
-  flightTimer = setTimeout(() => flyFrom(i + 1), RULES.stepSeconds * 1000);
+function select(i, pan = true, speak = false) {
+  if (!N) return;
+  S.idx = clamp(i, 0, N - 1);
+  const c = cells[S.idx], st = statusOf(c), def = c.height_deficit_m ?? 0;
+  $('scrubber').value = S.idx;
+  $('scrubber').setAttribute('aria-valuetext', `Footprint ${S.idx + 1} of ${N}: ${content.status[st]}, ${c.rh100_m.toFixed(0)} metres`);
+  $('selStatus').innerHTML = `<span class="st-${st}">${content.status[st]}</span>`;
+  $('selPos').textContent = `${S.idx + 1} / ${N}`;
+  $('selCoord').textContent = `${c.lat_bin.toFixed(2)}°, ${c.lon_bin.toFixed(2)}°`;
+  $('selRh').textContent = `${c.rh100_m.toFixed(1)} m`;
+  $('selPred').textContent = `${(c.pred_rh100_m ?? c.rh100_m).toFixed(1)} m`;
+  $('selDef').textContent = `${def >= 0 ? '+' : ''}${def.toFixed(1)} m`;
+  $('selCover').textContent = `${((c.canopy_cover ?? 0) * 100).toFixed(0)}%`;
+  if (ring) map.removeLayer(ring);
+  ring = L.circleMarker([c.lat_bin, c.lon_bin], { radius: 11, color: '#ffffff', weight: 2.5, fillOpacity: 0, interactive: false }).addTo(map);
+  if (pan) map.panTo([c.lat_bin, c.lon_bin], { animate: !prefs.reduceMotion, duration: 0.25 });
+  drawProfile();
+  sound(c);
+  if (speak) say(describe(c));
 }
-function finish() {
-  shell.say(content.passSummary(S.lastPass + 1, passInfo[S.lastPass]), { queue: true });
-  shell.say(content.outro, { queue: true });
-  caption(content.outro);
-  setPlaying(false, true);
-  audio?.setDrone(0.6, 0.05);
+
+// ---------- playback ----------
+function start(play = true) {
+  initAudio(); S.audible = true; $('startOverlay').hidden = true;
+  if (!S.started) { S.started = true; say(content.intro); S.lastSpeak = performance.now(); }
+  if (play) setPlaying(true);
 }
-function setPlaying(on, silent) {
-  S.playing = on;
+function narrateWhilePlaying(c) {
+  const now = performance.now(), w = where(c);
+  if (w !== S.lastWhere) { S.lastWhere = w; if (S.idx > 0) { say(content.enterRegion(w), { queue: true }); S.lastSpeak = now; } return; }
+  if (now - S.lastSpeak < RULES.speakEverySec * 1000) return;
+  const st = statusOf(c);
+  if (st === 'severe') { say(content.severeLine(c, w)); S.lastSpeak = now; }
+  else if (st === 'intact' && c.rh100_m > 25) { say(content.intactLine(c, w)); S.lastSpeak = now; }
+}
+function setPlaying(on) {
+  S.playing = on; clearInterval(S.timer);
   $('playBtn').textContent = on ? 'Pause' : 'Play'; $('playBtn').setAttribute('aria-pressed', String(on));
   if (on) {
-    initAudio(); $('startOverlay').hidden = true;
-    if (!S.started) { S.started = true; shell.say(content.intro); caption(content.intro); flightTimer = setTimeout(() => flyFrom(S.idx), 9000); }
-    else { if (S.idx >= cells.length - 1) S.idx = 0; flyFrom(cells[S.idx].heard ? S.idx + 1 : S.idx); }
-  } else { clearTimeout(flightTimer); S.iss = null; if (!silent) shell.say('Paused.', { speak: false }); }
+    if (S.idx >= N - 1) select(0);
+    S.lastWhere = where(cells[S.idx]);
+    S.timer = setInterval(() => {
+      if (S.idx >= N - 1) { setPlaying(false); say(content.outro); return; }
+      select(S.idx + 1, (S.idx + 1) % RULES.panEvery === 0);
+      narrateWhilePlaying(cells[S.idx]);
+    }, RULES.stepMs);
+  } else {
+    voices?.silence();
+  }
+}
+function step(d) { start(false); if (S.playing) setPlaying(false); select(S.idx + d, true, false); sound(cells[S.idx]); caption(describe(cells[S.idx])); shell.say(describe(cells[S.idx]), { speak: false }); }
+function jumpTo(kind) {
+  start(false); if (S.playing) setPlaying(false);
+  let best = 0, score = -Infinity;
+  cells.forEach((c, i) => { const s = kind === 'intact' ? (c.rh100_m || 0) * (1 - (c.dieback_index ?? 0)) : (c.dieback_index ?? 0) + (c.pred_rh100_m ?? 0) / 1000; if (s > score) { score = s; best = i; } });
+  select(best, false, true); map.setView([cells[best].lat_bin, cells[best].lon_bin], kind === 'intact' ? 11 : 12, { animate: !prefs.reduceMotion });
 }
 
-// ---------- drawing ----------
-function draw() {
-  requestAnimationFrame(draw);
-  if (!W) return;
-  const now = performance.now(), hc = prefs.highContrast, reduce = prefs.reduceMotion;
-  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(bg, 0, 0); g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const activePass = S.playing || S.iss ? cells[S.idx].pass : -1;
-  for (const c of cells) {
-    if (c.heard) c.burn = reduce ? 1 : clamp((now - c.burnT) / 3200, 0, 1);
-    const alive = heightColor(c.rh100_m), b = c.burn * 0.85, col = alive.map((v, k) => v + (ASH[k] - v) * b);
-    const dim = activePass >= 0 && c.pass !== activePass ? 0.55 : 1;
-    const hgt = Math.max(2, c.rh100_m * HK * (1 - 0.6 * c.burn));
-    const flare = c.heard ? Math.max(0, 1 - (now - c.burnT) / 500) : 0;
-    g.strokeStyle = `rgba(${col.map(v => v | 0).join(',')},${(0.9 * dim).toFixed(2)})`;
-    g.lineWidth = (hc ? 3 : 2.2) + flare * 2; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(c.x, c.y); g.lineTo(c.x + (c.burn * 2.5), c.y - hgt); g.stroke();   // withered spikes lean slightly
-    if (flare > 0) { g.fillStyle = `rgba(230,255,240,${flare})`; g.beginPath(); g.arc(c.x, c.y - hgt, 3 + flare * 4, 0, Math.PI * 2); g.fill(); }
-    if (c.rh100_m < RULES.lossThreshold) { g.strokeStyle = `rgba(160,150,140,${0.8 * dim})`; g.lineWidth = 1.4; g.beginPath(); g.moveTo(c.x - 3, c.y - 3); g.lineTo(c.x + 3, c.y + 3); g.moveTo(c.x + 3, c.y - 3); g.lineTo(c.x - 3, c.y + 3); g.stroke(); }
-  }
-  // laser pulses on the ground
-  for (let k = pulses.length - 1; k >= 0; k--) {
-    const p = pulses[k], a = (now - p.t) / 900; if (a > 1) { pulses.splice(k, 1); continue; }
-    g.strokeStyle = `rgba(200,255,225,${(1 - a) * 0.8})`; g.lineWidth = 1.5; g.beginPath(); g.arc(p.x, p.y, 3 + a * 22, 0, Math.PI * 2); g.stroke();
-  }
-  // ash rising
-  for (let k = embers.length - 1; k >= 0; k--) {
-    const e = embers[k]; e.x += e.vx; e.y += e.vy; e.life -= 0.006; if (e.life <= 0) { embers.splice(k, 1); continue; }
-    g.fillStyle = `rgba(${e.life > 0.7 ? '255,170,90' : '150,140,130'},${e.life * 0.6})`; g.fillRect(e.x, e.y, 1.6, 1.6);
-  }
-  // the station
-  if (S.iss) {
-    const p = clamp((now - S.iss.t0) / S.iss.dur, 0, 1), x = S.iss.from.x + (S.iss.to.x - S.iss.from.x) * p, y = S.iss.from.y + (S.iss.to.y - S.iss.from.y) * p;
-    const gl = g.createRadialGradient(x, y, 0, x, y, 26); gl.addColorStop(0, 'rgba(255,255,255,.95)'); gl.addColorStop(0.25, 'rgba(180,220,255,.45)'); gl.addColorStop(1, 'rgba(180,220,255,0)');
-    g.fillStyle = gl; g.beginPath(); g.arc(x, y, 26, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#fff'; g.font = '11px "JetBrains Mono", monospace'; g.fillText('ISS · GEDI', x + 12, y - 10);
-  }
-  // selection / hover ring
-  const sel = cells[S.hover >= 0 ? S.hover : S.idx];
-  if (sel && (S.started || S.hover >= 0)) { g.strokeStyle = '#ffd84d'; g.lineWidth = 2; g.beginPath(); g.arc(sel.x, sel.y, 7, 0, Math.PI * 2); g.stroke(); }
-}
-
-// ---------- input ----------
-function nearest(e) {
-  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  let best = -1, bd = 22;
-  cells.forEach((c, i) => { const d = Math.min(Math.hypot(c.x - mx, c.y - my), Math.abs(c.x - mx) < 4 && my < c.y && my > c.y - c.rh100_m * HK ? 0 : 99); if (d < bd) { bd = d; best = i; } });
-  return best;
-}
-cv.addEventListener('pointermove', e => { const i = nearest(e); if (i !== S.hover) { S.hover = i; if (i >= 0) { showCell(i); if (audio && !S.playing) sound(cells[i], audio.ac.currentTime + 0.01); } } });
-cv.addEventListener('pointerleave', () => { S.hover = -1; });
-cv.addEventListener('click', e => { initAudio(); $('startOverlay').hidden = true; S.started = true; const i = nearest(e); if (i >= 0) hear(i, { speak: true }); });
-function stepBy(d) { initAudio(); $('startOverlay').hidden = true; S.started = true; if (S.playing) setPlaying(false); hear(clamp(S.idx + d, 0, cells.length - 1), { speak: true }); }
-function passBy(d) { const p = clamp(cells[S.idx].pass + d, 0, passes.length - 1); initAudio(); if (S.playing) setPlaying(false); S.started = true; $('startOverlay').hidden = true; hear(passes[p][0].i, { speak: true }); shell.say(content.passIntro(p + 1, passes.length, passInfo[p].from, passInfo[p].to), { queue: true }); }
+// ---------- controls ----------
+$('startBtn').addEventListener('click', () => { start(true); $('map').focus(); });
+$('playBtn').addEventListener('click', () => { start(false); setPlaying(!S.playing); });
+$('prevBtn').addEventListener('click', () => step(-1));
+$('nextBtn').addEventListener('click', () => step(1));
+$('intactBtn').addEventListener('click', () => jumpTo('intact'));
+$('severeBtn').addEventListener('click', () => jumpTo('severe'));
+$('describeBtn').addEventListener('click', () => say(describe(cells[S.idx])));
+$('scrubber').max = Math.max(0, N - 1);
+$('scrubber').addEventListener('input', e => { start(false); if (S.playing) setPlaying(false); select(+e.target.value, true); });
+$('metricSel').addEventListener('change', e => { metric = e.target.value; render(); });
+$('corridorBtn').addEventListener('click', e => { corridor = !corridor; e.currentTarget.setAttribute('aria-pressed', String(corridor)); render(); });
+$('fitBtn').addEventListener('click', fit);
+$('vol').addEventListener('input', e => voices?.setVolume(e.target.value / 100));
 document.addEventListener('keydown', e => {
-  const tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'select' || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.key === 'ArrowRight' && (e.target === cv || tag === 'body')) { e.preventDefault(); stepBy(1); }
-  else if (e.key === 'ArrowLeft' && (e.target === cv || tag === 'body')) { e.preventDefault(); stepBy(-1); }
-  else if (e.key === 'PageDown') { e.preventDefault(); passBy(1); }
-  else if (e.key === 'PageUp') { e.preventDefault(); passBy(-1); }
-  else if (e.key === ' ' && tag !== 'button') { e.preventDefault(); setPlaying(!S.playing); }
-  else if (e.key === 'd' || e.key === 'D') describe();
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (k === ' ' && tag !== 'button') { e.preventDefault(); start(false); setPlaying(!S.playing); }
+  else if (k === 'ArrowRight' || k === 'ArrowLeft') { if (tag === 'button') return; e.preventDefault(); step((k === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 10 : 1)); }
+  else if (k === 'i' || k === 'I') jumpTo('intact');
+  else if (k === 's' || k === 'S') jumpTo('severe');
+  else if (k === 'd' || k === 'D') say(describe(cells[S.idx]));
 });
-function describe() {
-  const st = updateForestStats(), c = cells[S.idx];
-  shell.say(`${cellSentence(c)} ${st.n ? `So far you have heard ${st.n} footprints, averaging ${st.mean.toFixed(0)} metres; ${st.lost} were thinned forest.` : ''}`);
-}
-$('startBtn').addEventListener('click', () => { setPlaying(true); cv.focus(); });
-$('playBtn').addEventListener('click', () => setPlaying(!S.playing));
-$('prevFp').addEventListener('click', () => stepBy(-1)); $('nextFp').addEventListener('click', () => stepBy(1));
-$('prevPass').addEventListener('click', () => passBy(-1)); $('nextPass').addEventListener('click', () => passBy(1));
-$('describeBtn').addEventListener('click', describe);
-$('resetBtn').addEventListener('click', () => { setPlaying(false, true); cells.forEach(c => { c.heard = false; c.burn = 0; }); S.idx = 0; S.lastPass = -1; S.started = false; updateForestStats(); audio?.setDrone(1, 1); shell.say('The forest is restored.', { speak: true }); });
-$('vol').addEventListener('input', e => audio?.setVolume(e.target.value / 100));
-prefs.onChange(() => drawBackground());
-addEventListener('resize', () => { clearTimeout(window.__rz); window.__rz = setTimeout(resize, 120); });
+addEventListener('resize', () => { clearTimeout(window.__rz); window.__rz = setTimeout(() => { map.invalidateSize(); drawProfile(); }, 120); });
 
-resize(); showCell(0); updateForestStats();
-cv.setAttribute('aria-label', `GEDI canopy height map: ${cells.length} footprints along ${passes.length} ISS passes over the Amazon. Use the arrow keys to step through them.`);
-requestAnimationFrame(draw);
+render(); fit(); select(0, false);
+requestAnimationFrame(() => { map.invalidateSize(); fit(); });
