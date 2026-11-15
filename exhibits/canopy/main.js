@@ -10,6 +10,7 @@ import { prefs } from '../../src/shared/prefs.js';
 import { content, transcript } from './content.js';
 import { RULES, METRICS, voicesFor, statusOf } from './mapping.js';
 import { createVoices } from './instruments.js';
+import { mountCues } from '../../src/shared/cues.js';
 
 const shell = mountShell({ id: 'canopy', transcript });
 const $ = id => document.getElementById(id);
@@ -95,20 +96,18 @@ function sound(c) {
 }
 // the live strip under the map: each data value next to the sound it drives
 const word = (x, lo, mid, hi) => (x < 0.33 ? lo : x < 0.66 ? mid : hi);
+const strip = mountCues('#cues', [
+  { id: 'height', label: 'Canopy height', sound: 'Main voice', rule: 'taller forest → higher note', color: '#06b6d4' },
+  { id: 'health', label: 'Canopy health', sound: 'Shimmer', rule: 'healthier → brighter octave above', color: '#10b981' },
+  { id: 'stress', label: 'Dieback stress', sound: 'Dissonance', rule: 'more dieback → louder, sour clash', color: '#ef4444' },
+  { id: 'elev', label: 'Ground elevation', sound: 'Low drone', rule: 'higher ground → higher drone', color: '#a8a29e' },
+]);
 function cues(c, v) {
-  const hT = clamp(c.rh100_m / RULES.maxHeight, 0, 1), st = v.stress, eT = clamp((c.elev_m || 0) / 1000, 0, 1);
-  $('cuHeight').textContent = `${c.rh100_m.toFixed(1)} m`;
-  $('cuHeightBar').style.width = hT * 100 + '%';
-  $('cuPitch').textContent = `${v.pad.freq.toFixed(0)} Hz · ${word(hT, 'low', 'middle', 'high')}`;
-  $('cuHealth').textContent = `${Math.round((1 - st) * 100)}%`;
-  $('cuHealthBar').style.width = (1 - st) * 100 + '%';
-  $('cuShimmer').textContent = word(1 - st, 'faint', 'soft', 'bright');
-  $('cuStress').textContent = `${Math.round(st * 100)}%`;
-  $('cuStressBar').style.width = st * 100 + '%';
-  $('cuDiss').textContent = st > 0.5 ? 'loud · minor third' : st > 0.25 ? 'quiet · fifth' : 'almost silent';
-  $('cuElev').textContent = `${Math.round(c.elev_m || 0)} m`;
-  $('cuElevBar').style.width = eT * 100 + '%';
-  $('cuDrone').textContent = `${v.sub.freq.toFixed(0)} Hz`;
+  const hT = clamp(c.rh100_m / RULES.maxHeight, 0, 1), st = v.stress;
+  strip.set('height', { value: `${c.rh100_m.toFixed(1)} m`, meter: hT, sound: `${v.pad.freq.toFixed(0)} Hz · ${word(hT, 'low', 'middle', 'high')}` });
+  strip.set('health', { value: `${Math.round((1 - st) * 100)}%`, meter: 1 - st, sound: word(1 - st, 'faint', 'soft', 'bright') });
+  strip.set('stress', { value: `${Math.round(st * 100)}%`, meter: st, sound: st > 0.5 ? 'loud · minor third' : st > 0.25 ? 'quiet · fifth' : 'almost silent' });
+  strip.set('elev', { value: `${Math.round(c.elev_m || 0)} m`, meter: (c.elev_m || 0) / 1000, sound: `${v.sub.freq.toFixed(0)} Hz` });
 }
 
 // ---------- selection ----------

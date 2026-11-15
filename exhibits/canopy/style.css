@@ -35,16 +35,3 @@ dd.intact, .st-intact { color: #34d399; } dd.severe, .st-severe { color: #f87171
 .leaflet-container canvas, .leaflet-container img { max-width: none !important; }
 .mapbox { isolation: isolate; z-index: 0; }
 
-/* live data → sound strip under the piece */
-.cues { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; border: 1px solid var(--line); background: var(--panel-solid); }
-.cue { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.cue + .cue { border-left: 1px solid var(--line); }
-.cue .k { font-size: .74rem; color: var(--mute); }
-.cue b { font-family: var(--mono); font-weight: 500; font-size: 1.25rem; }
-.cue .meter { height: 3px; background: var(--line); overflow: hidden; margin: 2px 0 4px; }
-.cue .meter i { display: block; height: 100%; width: 0; transition: width .12s; }
-.cue .s { font-size: .8rem; }
-.cue .s em { font-style: normal; font-family: var(--mono); font-size: .78rem; color: var(--accent); margin-left: 4px; }
-.cue .s small { display: block; color: var(--faint); font-size: .72rem; margin-top: 1px; }
-#cuHeightBar { background: #06b6d4; } #cuHealthBar { background: #10b981; } #cuStressBar { background: #ef4444; } #cuElevBar { background: #a8a29e; }
-@media (max-width: 760px) { .cues { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cue:nth-child(3) { border-left: 0; } .cue:nth-child(n+3) { border-top: 1px solid var(--line); } }

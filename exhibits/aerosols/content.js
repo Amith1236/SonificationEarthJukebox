@@ -24,6 +24,7 @@ export const content = {
   },
 
   // Names and the voice description shown in the mixer (the sound itself is in layers.js / instruments.js)
+  cueRule: 'denser → louder and higher · wider → plays more often',
   layers: {
     salt: { name: 'Sea salt', voice: 'distant choir + ocean swell' },
     dust: { name: 'Dust', voice: 'low bowed strings' },

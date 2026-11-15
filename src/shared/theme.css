@@ -120,7 +120,7 @@ dialog.ej-dialog p { margin: 0 0 8px; color: var(--mute); max-width: 66ch; }
      main.room > .piece (the work) + .plinth (.ej-label + .transport) + aside.drawer
    ========================================================================== */
 .room { max-width: 1480px; margin: 0 auto; padding: 22px clamp(14px, 3vw, 40px) 0; min-height: calc(100svh - var(--bar-h)); display: flex; flex-direction: column; }
-.piece { position: relative; margin: 0 auto; width: min(100%, calc((100svh - var(--bar-h) - 170px) * var(--ar, 2))); background: #000; border: 4px solid var(--accent); box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 22%, transparent); }
+.piece { position: relative; margin: 0 auto; width: min(100%, calc((100svh - var(--bar-h) - 270px) * var(--ar, 2))); background: #000; border: 4px solid var(--accent); box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 22%, transparent); }
 .piece canvas { display: block; width: 100%; height: auto; }
 .piece canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .plinth { width: 100%; margin: 18px auto 0; display: flex; gap: 18px 28px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-bottom: 28px; }
@@ -162,3 +162,15 @@ dialog.ej-dialog p { margin: 0 0 8px; color: var(--mute); max-width: 66ch; }
 button.primary[aria-pressed], button.primary[aria-pressed]:hover { background: var(--ink); color: var(--accent-ink); border-color: var(--ink); }
 .piece:has(.startover:not([hidden]):not([style*="none"])) .subtitle { display: none; }
 @media (max-width: 700px) { .subtitle { font-size: .8rem; bottom: 8px; } .plinth { margin-top: 12px; } .transport { justify-content: flex-start; } }
+
+/* live data → sound strip under a piece (src/shared/cues.js) */
+.cues { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin: 14px auto 0; width: 100%; border: 1px solid var(--line); background: var(--panel-solid); }
+.cue { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; border-left: 1px solid var(--line); margin-left: -1px; transition: opacity .2s; }
+.cue.dim { opacity: .4; }
+.cue .k { font-size: .74rem; color: var(--mute); }
+.cue b { font-family: var(--mono); font-weight: 500; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cue .meter { height: 3px; background: var(--line); overflow: hidden; margin: 2px 0 4px; }
+.cue .meter i { display: block; height: 100%; width: 0; transition: width .12s; }
+.cue .s { font-size: .8rem; }
+.cue .s em { font-style: normal; font-family: var(--mono); font-size: .78rem; color: var(--accent); margin-left: 6px; }
+.cue .s small { display: block; color: var(--faint); font-size: .72rem; margin-top: 1px; }

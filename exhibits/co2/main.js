@@ -9,6 +9,7 @@ import { prefs } from '../../src/shared/prefs.js';
 import { content, transcript } from './content.js';
 import { loadCountries, CITIES, REGIONS } from './geo.js';
 import { createSimulation, wrap180 } from './sim.js';
+import { mountCues } from '../../src/shared/cues.js';
 import { bpmOf, changeWord, tempoWord, band, intensityOf, colorOf, BPM_MIN, BPM_MAX, PHRASE, PPM_LO, PPM_HI, RISE_WINDOW_H, TEMPO_GLIDE_S } from './mapping.js';
 import { createAudio } from './instruments.js';
 
@@ -54,7 +55,7 @@ const toLonLat = (x, y) => { const s = scale(); return [wrap180(viewState.lon + 
 
 function resize() {
   const r = map.parentElement.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = Math.round(r.width); H = Math.round(Math.max(300, Math.min(W / 2, window.innerHeight - 250)));
+  W = Math.round(r.width); H = Math.round(Math.max(300, Math.min(W / 2, window.innerHeight - 350)));
   [map, base, trails].forEach(c => { c.width = W * DPR; c.height = H * DPR; });
   map.style.height = H + 'px';
   [mctx, bctx, tctx].forEach(x => x.setTransform(DPR, 0, 0, DPR, 0, 0));
@@ -546,3 +547,24 @@ sim.start(pct => {
 updateStats();
 requestAnimationFrame(frame);
 window.__cc = { rise: riseNow, stats: () => stats, sel, music, ready: () => sim.readySteps(), setHour: h => { simHour = h; } };
+
+// =====================================================================
+// Live strip under the map: what the data is doing to the piano right now
+// =====================================================================
+const strip = mountCues('#cues', [
+  { id: 'ppm', label: 'CO₂ here', sound: 'Base tempo', rule: 'more CO₂ → a little faster', color: '#e8874a' },
+  { id: 'rise', label: 'Change over the last 4 h', sound: 'Piano tempo', rule: 'rising → races · falling → crawls', color: '#d2372a' },
+  { id: 'wind', label: 'East–west wind', sound: 'Stereo', rule: 'air moving east → right ear', color: '#9fb7d9' },
+  { id: 'mel', label: 'Melody and volume', sound: 'Piano', rule: 'never change: only tempo and stereo carry data', color: '#6f6d68' },
+]);
+function updateCues() {
+  if (sim.readySteps() < 2) return;
+  const v = liveValues();
+  const I = v.demo ? clamp((v.ppm - PPM_LO) / (PPM_HI - PPM_LO), 0, 1) : intensityOf(v.ppm, localRange);
+  const target = Math.round(bpmOf(I, v.rise)), base = Math.round(bpmOf(I, 0)), pan = clamp(v.u / 14, -0.75, 0.75);
+  strip.set('ppm', { value: `${v.ppm.toFixed(1)} ppm`, meter: (v.ppm - PPM_LO) / (PPM_HI - PPM_LO), sound: `${base} BPM` });
+  strip.set('rise', { value: Math.abs(v.rise) < 0.12 ? 'steady' : `${v.rise > 0 ? '+' : '−'}${Math.abs(v.rise).toFixed(2)} ppm`, meter: Math.abs(v.rise) / 1.5, sound: `${target} BPM · ${tempoWord(target)}` });
+  strip.set('wind', { value: !sel.pin ? 'pick a place' : Math.abs(v.u) < 1 ? 'calm' : `${Math.round(Math.abs(v.u) * 3.6)} km/h ${v.u > 0 ? 'east' : 'west'}`, meter: Math.abs(pan) / 0.75, sound: pan > 0.15 ? 'right' : pan < -0.15 ? 'left' : 'centre' });
+  strip.set('mel', { value: 'fixed', meter: 0, sound: 'D minor phrase' });
+}
+setInterval(updateCues, 300);

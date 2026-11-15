@@ -5,6 +5,7 @@
 // =============================================================================
 import { mountShell } from '../../src/shared/shell.js';
 import { content, transcript } from './content.js';
+import { mountCues } from '../../src/shared/cues.js';
 import { MOODS, moodOf, bpmOf, cutoffOf, NO2_MAX, darknessOf, isIgnored, pixelToLatLon } from './mapping.js';
 import { createNo2Audio } from './instruments.js';
 
@@ -16,6 +17,12 @@ $('kicker').textContent = content.kicker; $('title').textContent = content.title
 $('about').innerHTML = content.about; $('foot').textContent = content.footer; $('keysHelp').innerHTML = content.keys;
 $('startTitle').textContent = content.startTitle; $('startText').textContent = content.startText; $('startBtn').textContent = content.startButton;
 $('moodCards').innerHTML = MOODS.map(m => `<div class="m" style="border-color:${m.color}55;background:${m.color}10"><h3 style="color:${m.color}"><span>${m.label}</span><span class="mono">${m.rangeText}</span></h3>${m.description}</div>`).join('');
+const strip = mountCues('#cues', [
+  { id: 'no2', label: 'NO₂ column', sound: 'Mood', rule: 'more NO₂ → a darker mood', color: '#1fa11b' },
+  { id: 'dark', label: 'Plume darkness', sound: 'Tempo', rule: 'darker → slower', color: '#818cf8' },
+  { id: 'clean', label: 'Clean air', sound: 'Tone', rule: 'cleaner → brighter, more open sound', color: '#e2fbe2' },
+  { id: 'inst', label: 'Instrument', sound: 'Key', rule: 'each mood has its own instrument and scale', color: '#6f6d68' },
+]);
 
 // ---------- frames ----------
 const meta = await (await fetch('/data/no2/frames.json')).json();
@@ -125,6 +132,10 @@ function telemetry() {
   $('scaleReadout').textContent = m.scaleName; $('tempoReadout').textContent = `${S.bpm} BPM · ${m.tempoWord}`;
   $('noteReadout').textContent = S.freq ? `${S.note} (${Math.round(S.freq)} Hz) · ${m.chord}` : m.chord;
   $('timbreReadout').textContent = `${S.cutoff.toLocaleString()} Hz · ${m.timbre}`;
+  strip.set('no2', { value: `${S.no2.toFixed(1)} ×10¹⁵`, meter: S.no2 / NO2_MAX, sound: m.label });
+  strip.set('dark', { value: `${Math.round(S.darkness * 100)}%`, meter: S.darkness, sound: `${S.bpm} BPM · ${m.tempoWord}` });
+  strip.set('clean', { value: `${lightPct}%`, meter: lightPct / 100, sound: `filter ${S.cutoff.toLocaleString()} Hz` });
+  strip.set('inst', { value: m.timbre, meter: MOODS.indexOf(m) / (MOODS.length - 1), sound: m.scaleName });
   $('synthStateLabel').textContent = !S.audioOn ? 'Muted' : active() ? (S.pinned ? 'Playing locked probe' : 'Playing pointer') : 'Armed: hover or lock';
   cv.setAttribute('aria-label', `NO₂ forecast map, ${FRAMES[S.frame].label}. Probe at ${ll}: ${m.label}, about ${S.no2.toFixed(1)} times ten to the fifteen molecules per square centimetre.`);
 }

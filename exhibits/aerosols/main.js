@@ -9,6 +9,7 @@ import { prefs } from '../../src/shared/prefs.js';
 import { content, transcript } from './content.js';
 import { LAYERS as LAYER_SOUND, SCALES, ROOT, DEFAULTS } from './layers.js';
 import { createInstruments } from './instruments.js';
+import { mountCues } from '../../src/shared/cues.js';
 
 const shell = mountShell({ id: 'aerosols', transcript });
 const say = (t, o) => shell.say(t, o);
@@ -24,6 +25,8 @@ $('startBtn').textContent = content.startButton; $('startHint').textContent = co
 document.querySelectorAll('.tabs button').forEach(b => { b.textContent = content.modes[b.dataset.mode].label; });
 $('scale').innerHTML = Object.keys(SCALES).map(s => `<option>${s}</option>`).join('');
 $('howList').innerHTML = content.howItSounds.map(h => `<li>${h}</li>`).join('');
+const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
+const strip = mountCues('#cues', LAYERS.map(L => ({ id: L.id, label: L.name, sound: cap1(L.voice), rule: content.cueRule, color: L.color })));
 
 // ---------- state ----------
 const cv = $('cv'), ctx = cv.getContext('2d');
@@ -229,7 +232,14 @@ function endJourney() {
 // ---------- visuals ----------
 const ripples = [];
 function ripple(x, y, color, v) { ripples.push({ x: x / GW * W, y: y / GH * H, color, v, born: performance.now() }); if (ripples.length > 120) ripples.shift(); }
-function setMeters(smp) { for (const L of LAYERS) { const el = document.querySelector(`.mx[data-id="${L.id}"] .lvl i`); if (el) el.style.width = Math.round(clamp(smp[L.id].mean * 2.2) * 100) + '%'; } }
+function setMeters(smp) {
+  for (const L of LAYERS) {
+    const o = smp[L.id], v = clamp(o.mean * 2.2), el = document.querySelector(`.mx[data-id="${L.id}"] .lvl i`);
+    if (el) el.style.width = Math.round(v * 100) + '%';
+    const loud = v < 0.06 ? null : v < 0.25 ? 'soft' : v < 0.55 ? 'clear' : 'loud', often = o.cover > 0.3 ? 'often' : o.cover > 0.08 ? 'now and then' : 'rarely';
+    strip.set(L.id, { value: `${Math.round(v * 100)}%`, meter: v, sound: loud ? `${loud} · ${often}` : 'silent', dim: layerGain(L.id) < 0.5 });
+  }
+}
 function draw() {
   requestAnimationFrame(draw);
   if (!ready) return;
