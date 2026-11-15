@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vercel/
+.DS_Store
+Thumbs.db
+*.log
+# original single-file prototypes (kept locally for reference, not part of the site)
+Prototypes/

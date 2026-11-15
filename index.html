@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earth Information Jukebox · Listening to the air from orbit</title>
+<meta name="description" content="An accessible, interactive sonification of Earth's air quality built from NASA data: aerosols, carbon dioxide, forest canopy and nitrogen dioxide, turned into music.">
+<meta name="theme-color" content="#02030a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%2316407a'/%3E%3Cpath d='M5 18c5-5 9 3 14-2s7-3 9 0' fill='none' stroke='%237cc4ff' stroke-width='2.5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/src/shared/theme.css">
+<link rel="stylesheet" href="/src/hub/hub.css">
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="veil" class="veil" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand"><span id="brandName">Earth Information Jukebox</span><b>Low Earth Orbit</b></div>
+  <div class="tools" role="group" aria-label="Settings">
+    <button id="listBtn" aria-expanded="false" aria-controls="list" aria-keyshortcuts="L">☰ List view</button>
+    <button id="ttsBtn" aria-pressed="true" aria-keyshortcuts="N">🗣 Narration</button>
+    <label class="sr-only" for="voiceSel">Narrator voice</label>
+    <select id="voiceSel" title="Narrator voice"></select>
+    <button id="ambBtn" aria-pressed="true">🔊 Ambience</button>
+    <button id="rmBtn" aria-pressed="false">Reduce motion</button>
+  </div>
+</header>
+
+<main id="main">
+  <h1 class="sr-only">Earth Information Jukebox: listening to the air from low Earth orbit</h1>
+
+  <aside id="list" hidden aria-label="All chapters">
+    <h2>The journey</h2>
+    <ol id="listItems"></ol>
+  </aside>
+
+  <section class="card" id="card" aria-label="Chapter in front of you" aria-live="off">
+    <div class="txt">
+      <div class="kick"><i id="cDot"></i><span id="cKick">Chapter 01</span></div>
+      <h2 id="cTitle">—</h2>
+      <p class="sub" id="cSub"></p>
+      <p class="sound" id="cSound"></p>
+      <p class="note" id="cNote" hidden></p>
+    </div>
+    <div class="acts">
+      <button id="enterBtn" class="primary">Enter ▸</button>
+      <div class="pn"><button id="prevBtn" aria-label="Turn to the previous chapter">‹ Prev</button><button id="nextBtn" aria-label="Turn to the next chapter">Next ›</button></div>
+    </div>
+  </section>
+</main>
+
+<div class="help" id="help" aria-hidden="true"></div>
+<div id="tip" hidden></div>
+
+<div id="splash" class="overlay" role="dialog" aria-modal="true" aria-labelledby="splashTitle">
+  <div class="splash">
+    <div class="eyebrow" id="spEyebrow"></div>
+    <h1 id="splashTitle"></h1>
+    <p id="spBody"></p>
+    <div class="row">
+      <button id="enterDome" class="primary"></button>
+      <button id="enterList"></button>
+    </div>
+    <small id="spSmall"></small>
+  </div>
+</div>
+
+<footer class="credits" id="credits"></footer>
+
+<script type="module" src="/src/hub/main.js"></script>
+</body>
+</html>

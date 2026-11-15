@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aerosols · Earth Information Jukebox</title>
+<meta name="description" content="A journey through Earth's aerosol hotspots, played by a sombre orchestra. NASA GEOS model data.">
+<link rel="stylesheet" href="/src/shared/theme.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header id="ej-shell"></header>
+
+<main id="main" class="wrap">
+  <div class="eyebrow" id="exKicker"></div>
+  <h1 id="exTitle"></h1>
+  <p class="lede" id="exLede"></p>
+
+  <div class="ex">
+    <div class="stage">
+      <div class="cwrap">
+        <canvas id="cv" tabindex="0" role="img"></canvas>
+        <div id="startOverlay"><button class="big" id="startBtn"></button><p id="startHint"></p></div>
+      </div>
+      <div class="caption" aria-live="polite"><div class="where" id="capWhere">—</div><div class="txt" id="capTxt"></div></div>
+      <p id="about"></p>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div>
+        <h2 id="modeLabel">Mode</h2>
+        <div class="tabs" role="radiogroup" aria-labelledby="modeLabel">
+          <button role="radio" aria-checked="true" data-mode="story"></button>
+          <button role="radio" aria-checked="false" data-mode="lens"></button>
+          <button role="radio" aria-checked="false" data-mode="scan"></button>
+        </div>
+      </div>
+      <p class="help" id="modeHelp"></p>
+      <div class="row">
+        <button class="btn" id="playBtn" aria-pressed="false">▶ Play</button>
+        <button class="btn" id="describeBtn" aria-keyshortcuts="D">🔊 Describe</button>
+      </div>
+      <div id="storyNav" class="row" hidden>
+        <button class="btn" id="prevStop" aria-keyshortcuts=",">◀ Prev stop</button>
+        <button class="btn" id="nextStop" aria-keyshortcuts=".">Next stop ▶</button>
+      </div>
+
+      <div>
+        <h2>Orchestra</h2>
+        <div class="mixer" id="mixer"></div>
+      </div>
+
+      <div class="sound">
+        <h2>Sound</h2>
+        <div class="fidbox">
+          <div class="ctrl wide"><label for="fid">Data ↔ Music</label><input type="range" id="fid" min="0" max="100" aria-describedby="fidHelp"><output id="fidO"></output></div>
+          <p id="fidHelp">Left: the AI melody model shapes the phrases. Right: notes follow the data exactly. In between, the model picks the most musical note <em>near</em> what the data asks for.</p>
+        </div>
+        <div class="ctrl"><label for="scale">Scale</label><select id="scale"></select><span></span></div>
+        <div class="ctrl"><label for="bpm">Tempo</label><input type="range" id="bpm" min="40" max="140"><output id="bpmO"></output></div>
+        <div class="ctrl"><label for="thr">Sensitivity</label><input type="range" id="thr" min="0" max="100"><output id="thrO"></output></div>
+        <div class="ctrl"><label for="lensR">Lens size</label><input type="range" id="lensR" min="4" max="40"><output id="lensRO"></output></div>
+        <div class="ctrl"><label for="rev">Reverb</label><input type="range" id="rev" min="0" max="100"><output id="revO"></output></div>
+        <div class="ctrl"><label for="vol">Volume</label><input type="range" id="vol" min="0" max="100"><output id="volO"></output></div>
+      </div>
+
+      <div class="modelinfo" id="modelInfo" hidden></div>
+      <details class="how"><summary>How the sound is made</summary><ul id="howList"></ul></details>
+      <div class="keys"><kbd>←↑↓→</kbd> move lens (<kbd>Shift</kbd> = faster) · <kbd>+</kbd><kbd>−</kbd> lens size · <kbd>Space</kbd> play/pause · <kbd>D</kbd> describe · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> modes · <kbd>,</kbd><kbd>.</kbd> prev/next stop · <kbd>T</kbd> transcript · <kbd>Esc</kbd> orbit</div>
+    </aside>
+  </div>
+
+  <section id="ej-next" aria-label="Continue the journey"></section>
+  <footer class="ej-foot" id="foot"></footer>
+</main>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

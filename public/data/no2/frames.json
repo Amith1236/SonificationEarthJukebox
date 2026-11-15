@@ -1,0 +1,67 @@
+{
+  "source": "NASA/GMAO GEOS-CF NO2 forecast",
+  "width": 721,
+  "height": 541,
+  "frames": [
+    {
+      "hour": "024 hr",
+      "valid": "Fri 09z 2026-11-13",
+      "label": "024 hr forecast valid Fri 09z 2026-11-13",
+      "src": "frame-00.jpg"
+    },
+    {
+      "hour": "027 hr",
+      "valid": "Fri 12z 2026-11-13",
+      "label": "027 hr forecast valid Fri 12z 2026-11-13",
+      "src": "frame-01.jpg"
+    },
+    {
+      "hour": "030 hr",
+      "valid": "Fri 15z 2026-11-13",
+      "label": "030 hr forecast valid Fri 15z 2026-11-13",
+      "src": "frame-02.jpg"
+    },
+    {
+      "hour": "033 hr",
+      "valid": "Fri 18z 2026-11-13",
+      "label": "033 hr forecast valid Fri 18z 2026-11-13",
+      "src": "frame-03.jpg"
+    },
+    {
+      "hour": "036 hr",
+      "valid": "Fri 21z 2026-11-13",
+      "label": "036 hr forecast valid Fri 21z 2026-11-13",
+      "src": "frame-04.jpg"
+    },
+    {
+      "hour": "039 hr",
+      "valid": "Sat 00z 2026-11-14",
+      "label": "039 hr forecast valid Sat 00z 2026-11-14",
+      "src": "frame-05.jpg"
+    },
+    {
+      "hour": "042 hr",
+      "valid": "Sat 03z 2026-11-14",
+      "label": "042 hr forecast valid Sat 03z 2026-11-14",
+      "src": "frame-06.jpg"
+    },
+    {
+      "hour": "045 hr",
+      "valid": "Sat 06z 2026-11-14",
+      "label": "045 hr forecast valid Sat 06z 2026-11-14",
+      "src": "frame-07.jpg"
+    },
+    {
+      "hour": "048 hr",
+      "valid": "Sat 09z 2026-11-14",
+      "label": "048 hr forecast valid Sat 09z 2026-11-14",
+      "src": "frame-08.jpg"
+    },
+    {
+      "hour": "051 hr",
+      "valid": "Sat 12z 2026-11-14",
+      "label": "051 hr forecast valid Sat 12z 2026-11-14",
+      "src": "frame-09.jpg"
+    }
+  ]
+}
